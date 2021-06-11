@@ -1,0 +1,14 @@
+{
+  "name": "easymongo",
+  "version": "1.0.0",
+  "description": "easyMongo helps you connect to your mongoDB instance and interacts with your collection",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "author": "Florian BUREL",
+  "license": "ISC",
+  "dependencies": {
+    "mongodb": "^3.6.9"
+  }
+}
