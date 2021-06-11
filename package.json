@@ -1,13 +1,17 @@
 {
-  "name": "easymongo",
+  "name": "myeasymongo",
   "version": "1.0.0",
-  "description": "easyMongo helps you connect to your mongoDB instance and interacts with your collection",
+  "description": "myeasymongo helps you connect to your mongoDB instance and interact with your collections",
   "main": "index.js",
   "scripts": {
-    "test": "test"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Florian BUREL",
-  "license": "ISC",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fburel/easyMongo.git"
+  },
   "dependencies": {
     "mongodb": "^3.6.9"
   }

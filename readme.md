@@ -2,10 +2,34 @@
 
 ## Description
 
-Easy mongo is a simple package that connects to a mongo db database and provide a simple way to interract with collection.
+easyMongo helps you connect to your mongoDB instance and interact with your collections
 
 ## installation 
 
 npm install --save
 
-## Before using it
+## Usage
+
+this package looks for a connection string in the MONGO environment variable. Before using, make sure to configure your working environment accordingly.
+
+example with gulp :
+
+``` javascript
+gulp.task("default", function () {
+  nodemon({
+    script: "./bin/www",
+    ext: "js",
+    env: {
+      PORT: 3000,
+      MONGO:
+        "mongodb+srv://..../myDatabase?retryWrites=true&w=majority",
+    },
+    ignore: ["./node_modules/**"],
+  }).on("restart", function () {
+    console.log("Restarting");
+  });
+});
+```
+
+once your environment is set up, you can install this package 
+`npm install easyMongo --save`
