@@ -1,6 +1,6 @@
 {
   "name": "myeasymongo",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "myeasymongo helps you connect to your mongoDB instance and interact with your collections",
   "main": "index.js",
   "scripts": {

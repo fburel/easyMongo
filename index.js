@@ -45,7 +45,9 @@ exports.Connect = async function onConnection(task, keepAlive = true) {
     const f = registred[cl];
     index[cl] = new f(driver);
   }
-  index.listDatabases = driver.db.admin().listDatabases
+  index.test = function() {
+    return driver.db.admin().listDatabases
+  }
 
   await task(index);
 
