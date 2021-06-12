@@ -5,6 +5,8 @@ const { MongoClient } = require("mongodb");
 const CollectionDriver = require("./CollectionDriver").CollectionDriver;
 
 let cachedDb = null;
+let registred = {};
+
 function connectToDatabase(uri) {
   if (cachedDb) {
     return Promise.resolve(cachedDb);
@@ -21,6 +23,10 @@ function connectToDatabase(uri) {
   });
 }
 
+exports.Register = function(name, collection){
+  registred[name] = collection;
+}
+
 exports.Connect = async function onConnection(task, keepAlive = true) {
   const URI = process.env.MONGO;
 
@@ -33,7 +39,12 @@ exports.Connect = async function onConnection(task, keepAlive = true) {
   const client = await connectToDatabase(URI);
   console.log("connected to Mongo");
   const driver = new CollectionDriver(client.db());
-  await task(driver);
+  let index = {};
+  for(var cl in registred) {
+    f = registred[cl];
+    index[cl] = new f(driver);
+  }
+  await task(index);
 
   if (!keepAlive) await client.close();
 };

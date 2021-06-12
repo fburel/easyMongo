@@ -1,4 +1,5 @@
 module.exports = function (Table) {
+  
   return function (driver) {
     this.driver = driver;
 

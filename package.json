@@ -13,6 +13,7 @@
     "url": "https://github.com/fburel/easyMongo.git"
   },
   "dependencies": {
-    "mongodb": "^3.6.9"
+    "mongodb": "^3.6.9",
+    "my-package": "^0.0.0"
   }
 }
