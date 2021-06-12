@@ -36,12 +36,13 @@ exports.Connect = async function onConnection(task, keepAlive = true) {
     console.log(err);
     throw err;
   }
+
   const client = await connectToDatabase(URI);
   console.log("connected to Mongo");
   const driver = new CollectionDriver(client.db());
   let index = {};
   for(var cl in registred) {
-    f = registred[cl];
+    const f = registred[cl];
     index[cl] = new f(driver);
   }
   index.listDatabases = driver.db.admin().listDatabases
