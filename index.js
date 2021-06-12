@@ -44,6 +44,8 @@ exports.Connect = async function onConnection(task, keepAlive = true) {
     f = registred[cl];
     index[cl] = new f(driver);
   }
+  index.listDatabases = driver.db.admin().listDatabases
+
   await task(index);
 
   if (!keepAlive) await client.close();
