@@ -4,6 +4,10 @@ let CollectionDriver = function (db) {
   this.db = db;
 };
 
+CollectionDriver.prototype.isConnected = function () {
+  return this.db.serverConfig.isConnected()
+};
+
 CollectionDriver.prototype.getDatabase = function () {
   return this.db;
 };
