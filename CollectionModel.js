@@ -39,14 +39,13 @@ module.exports = function (Table) {
       return this.driver.saveManyAsync(Table, objects);
     }
 
-    this.updateManyAsync = function setAsync(criteria, updater) {
-      const update = { $set: values };
+    this.updateManyAsync = function (criteria, updater) {
       return this.driver
         .updateManyAsync(Table, criteria, updater)
         .then(() => Promise.resolve(true));
     };
 
-    this.setAsync = function setAsync(id, values) {
+    this.setAsync = function (id, values) {
       const update = { $set: values };
       return this.driver
         .updateManyAsync(Table, {_id : this.driver.toObjectId(id) },update)
