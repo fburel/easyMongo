@@ -302,8 +302,7 @@ CollectionDriver.prototype.updateManyAsync = function (
   updater.$set._updated_at = new Date();
 
   return this.getCollectionAsync(collectionName)
-    .then((collection) => collection.updateOne(criteria, updater))
-    .then((result) => Promise.resolve(result.value));
+    .then((collection) => collection.updateMany(criteria, updater))
 };
 
 exports.CollectionDriver = CollectionDriver;
