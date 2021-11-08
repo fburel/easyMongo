@@ -6,7 +6,8 @@ easyMongo helps you connect to your mongoDB instance and interact with your coll
 
 ## installation 
 
-npm install --save
+You can install this package with NPM
+`npm install easyMongo --save`
 
 ## Usage
 
@@ -31,5 +32,3 @@ gulp.task("default", function () {
 });
 ```
 
-once your environment is set up, you can install this package 
-`npm install easyMongo --save`

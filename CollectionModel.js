@@ -31,10 +31,25 @@ module.exports = function (Table) {
       return this.driver.saveAsync(Table, value);
     };
 
+    this.saveAsync = function (value) {
+      return this.driver.saveAsync(Table, value);
+    };
+
+    this.saveAllAsync = function (objects) {
+      return this.driver.saveManyAsync(Table, objects);
+    }
+
+    this.updateManyAsync = function setAsync(criteria, updater) {
+      const update = { $set: values };
+      return this.driver
+        .updateManyAsync(Table, criteria, updater)
+        .then(() => Promise.resolve(true));
+    };
+
     this.setAsync = function setAsync(id, values) {
       const update = { $set: values };
       return this.driver
-        .partialUpdateAsync(Table, update, id)
+        .updateManyAsync(Table, {_id : this.driver.toObjectId(id) },update)
         .then(() => Promise.resolve(true));
     };
 

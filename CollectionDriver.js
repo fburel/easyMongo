@@ -223,6 +223,21 @@ CollectionDriver.prototype.saveAsync = function (collectionName, obj) {
     });
 };
 
+// Save a the given object into the given collection
+CollectionDriver.prototype.saveManyAsync = function(collectionName, array) {
+
+  return this.getCollectionAsync(collectionName)
+      .then(collection => {
+        return collection.insertMany(array, {
+          ordered : true
+        });
+      })
+      .then(res => {
+        return Promise.resolve(res.insertedIds);
+      });
+};
+
+
 CollectionDriver.prototype.updateAsync = function (
   collectionName,
   obj,
@@ -277,20 +292,17 @@ CollectionDriver.prototype.aggregateAsync = function (
     });
 };
 
-CollectionDriver.prototype.partialUpdateAsync = function (
+CollectionDriver.prototype.updateManyAsync = function (
   collectionName,
-  updater,
-  objectId
+  criteria,
+  updater
 ) {
-  if (!isBSonId(objectId)) throw "Invalid id";
-
-  const id = ObjectID(objectId);
 
   updater.$set = updater.$set || {};
   updater.$set._updated_at = new Date();
 
   return this.getCollectionAsync(collectionName)
-    .then((collection) => collection.updateOne({ _id: id }, updater))
+    .then((collection) => collection.updateOne(criteria, updater))
     .then((result) => Promise.resolve(result.value));
 };
 
