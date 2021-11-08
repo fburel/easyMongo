@@ -50,6 +50,8 @@ exports.Connect = async function onConnection(task, keepAlive = true) {
     return driver.isConnected()
   }
 
+  index.driver = driver;
+
   await task(index);
 
   if (!keepAlive) await client.close();
