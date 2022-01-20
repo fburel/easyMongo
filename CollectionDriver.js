@@ -184,7 +184,10 @@ CollectionDriver.prototype.toObjectId = function (idAsString) {
 
 // Return all the element from a given collection that matches a given criteria
 CollectionDriver.prototype.findOneAsync = function (collectionName, criteria) {
-  return this.db.collection(collectionName).findOne(criteria);
+  return this.db.collection(collectionName).findOne(criteria).then((res) => {
+    res._id = res._id.toString();
+    return res;
+  });;
 };
 
 // Return all the element from a given collection that matches a given criteria
@@ -233,7 +236,7 @@ CollectionDriver.prototype.saveManyAsync = function(collectionName, array) {
         });
       })
       .then(res => {
-        return Promise.resolve(res.insertedIds);
+        return Promise.resolve(res.insertedIds.map(x => x.toString()));
       });
 };
 
