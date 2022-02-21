@@ -7,17 +7,7 @@ module.exports = function (Table) {
       return this.driver.getByIdAsync(Table, _id);
     };
 
-    this.updateAsync = function (value) {
-      return this.driver.replaceAsync(Table, value, value._id);
-    };
-
-    this.deleteAsync = function deleteAsync(_id) {
-      return this.driver.deleteAsync(Table, _id);
-    };
-
-    this.deleteAllAsync = function deleteAllAsync(criteria) {
-      return this.driver.deleteAllAsync(Table, criteria);
-    };
+    
 
     this.findAllAsync = function findAllAsync(criteria) {
       return this.driver.findAllAsync(Table, criteria);
@@ -79,6 +69,19 @@ module.exports = function (Table) {
         .updateManyAsync(Table, {_id : this.driver.toObjectId(id) },update)
         .then(() => Promise.resolve(true));
     };
+
+    this.deleteOneAsync = function (criteria) {
+      return this.driver.deleteOneAsync(Table, criteria);
+    };
+
+    this.deleteByIdAsync = function(_id) {
+      return this.driver.deleteByIdAsync(Table, _id);
+    };
+
+    this.deleteAllAsync = function deleteAllAsync(criteria) {
+      return this.driver.deleteAllAsync(Table, criteria);
+    };
+    
 
     this.getByPageAsync = function (
       pageNumber,

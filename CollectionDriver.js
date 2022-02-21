@@ -89,8 +89,19 @@ CollectionDriver.prototype.replaceAsync = function (
   return this.db.collection(collectionName).findOneAndReplace({ _id: id }, obj).then((result) => Promise.resolve(result.value));
 };
 
-CollectionDriver.prototype.deleteAsync = function (collectionName, entityId) {
-  return this.db.collection(collectionName).deleteOne({ _id: ObjectID(entityId) });
+CollectionDriver.prototype.deleteOneAsync = function (collectionName, criteria) {
+  return this.db.collection(collectionName).deleteOne({ _id: criteria });
+};
+
+CollectionDriver.prototype.deleteByIdAsync = function (collectionName, id) {
+  if (isBSonId(id)) {
+    id = ObjectID(id);
+  }
+  else {
+    throw 'id is not a valid BSonId : ' + id
+  }
+
+  return this.deleteOneAsync(collectionName, {_id : id})
 };
 
 CollectionDriver.prototype.deleteAllAsync = function (
@@ -99,6 +110,7 @@ CollectionDriver.prototype.deleteAllAsync = function (
 ) {
   return this.db.collection(collectionName).deleteMany(criteria);
 };
+
 
 CollectionDriver.prototype.aggregateAsync = function (
   collectionName,
@@ -116,6 +128,7 @@ CollectionDriver.prototype.aggregateAsync = function (
   });
 };
 
+
 CollectionDriver.prototype.updateManyAsync = function (
   collectionName,
   criteria,
@@ -132,8 +145,8 @@ CollectionDriver.prototype.updateByIdAsync = function (
   updater
 ) {
 
-  if (isBSonId(objectId)) {
-    id = ObjectID(objectId);
+  if (isBSonId(id)) {
+    id = ObjectID(id);
   }
   else {
     throw 'id is not a valid BSonId : ' + id

@@ -38,7 +38,6 @@ exports.Connect = async function onConnection(task, keepAlive = true) {
   }
 
   const client = await connectToDatabase(URI);
-  console.log("connected to Mongo");
   const driver = new CollectionDriver(client.db());
   let index = {};
   for(const cl in registred) {
@@ -56,5 +55,15 @@ exports.Connect = async function onConnection(task, keepAlive = true) {
 
   if (!keepAlive) await client.close();
 };
+
+
+exports.toObjectId = function(idAsString){
+  function isBSonId(id) {
+    var checkForHexRegExp = new RegExp("^[0-9a-fA-F]{24}$");
+    return checkForHexRegExp.test(id);
+  }
+  if(!isBSonId(idAsString)) throw "cannot convert this string into an objectId";
+    return ObjectID(idAsString);
+}
 
 exports.Model = require("./CollectionModel");
