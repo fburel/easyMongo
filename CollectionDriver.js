@@ -185,7 +185,9 @@ CollectionDriver.prototype.toObjectId = function (idAsString) {
 // Return all the element from a given collection that matches a given criteria
 CollectionDriver.prototype.findOneAsync = function (collectionName, criteria) {
   return this.db.collection(collectionName).findOne(criteria).then((res) => {
-    res._id = res._id.toString();
+    if(res !== null){
+      res._id = res._id.toString();
+    }
     return res;
   });;
 };
@@ -229,6 +231,11 @@ CollectionDriver.prototype.saveAsync = function (collectionName, obj) {
 // Save a the given object into the given collection
 CollectionDriver.prototype.saveManyAsync = function(collectionName, array) {
 
+  array.forEach(obj => {
+    obj._created_at = new Date();
+    obj._updated_at = new Date();
+  })
+
   return this.getCollectionAsync(collectionName)
       .then(collection => {
         return collection.insertMany(array, {
@@ -241,7 +248,7 @@ CollectionDriver.prototype.saveManyAsync = function(collectionName, array) {
 };
 
 
-CollectionDriver.prototype.updateAsync = function (
+CollectionDriver.prototype.replaceAsync = function (
   collectionName,
   obj,
   objectId
@@ -306,6 +313,40 @@ CollectionDriver.prototype.updateManyAsync = function (
 
   return this.getCollectionAsync(collectionName)
     .then((collection) => collection.updateMany(criteria, updater))
+};
+
+CollectionDriver.prototype.updateByIdAsync = function (
+  collectionName,
+  id,
+  updater
+) {
+
+  if (isBSonId(objectId)) {
+    id = ObjectID(objectId);
+  }
+  else {
+    throw 'id is not a valid BSonId : ' + id
+  }
+
+  updater.$set = updater.$set || {};
+  updater.$set._updated_at = new Date();
+
+  return this.getCollectionAsync(collectionName)
+    .then((collection) => collection.updateOne({ _id : id }, updater))
+};
+
+CollectionDriver.prototype.updateOneAsync = function (
+  collectionName,
+  criteria,
+  updater
+) {
+
+
+  updater.$set = updater.$set || {};
+  updater.$set._updated_at = new Date();
+
+  return this.getCollectionAsync(collectionName)
+    .then((collection) => collection.updateOne(criteria, updater))
 };
 
 exports.CollectionDriver = CollectionDriver;

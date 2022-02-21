@@ -8,7 +8,7 @@ module.exports = function (Table) {
     };
 
     this.updateAsync = function (value) {
-      return this.driver.updateAsync(Table, value, value._id);
+      return this.driver.replaceAsync(Table, value, value._id);
     };
 
     this.deleteAsync = function deleteAsync(_id) {
@@ -39,9 +39,15 @@ module.exports = function (Table) {
       return this.driver.saveManyAsync(Table, objects);
     }
 
-    this.updateOneAsync = function (id, updater) {
+    this.updateByIdAsync = function (id, updater) {
       return this.driver
-        .updateManyAsync(Table, {_id : this.driver.toObjectId(id) }, updater)
+        .updateByIdAsync(Table, id, updater)
+        .then(() => Promise.resolve(true));
+    };
+
+    this.updateOneAsync = function (criteria, updater) {
+      return this.driver
+        .updateOneAsync(Table, criteria, updater)
         .then(() => Promise.resolve(true));
     };
 
@@ -50,6 +56,22 @@ module.exports = function (Table) {
         .updateManyAsync(Table, criteria, updater)
         .then(() => Promise.resolve(true));
     };
+
+    /**
+    * @deprecated Since version 2.0. Will be deleted in version 3.0. Use replaceAsync instead.
+    */
+    this.updateAsync = function (document) {
+      return this.driver
+        .replaceAsync(Table, document, document._id)
+        .then(() => Promise.resolve(true));
+    };
+
+    this.replaceAsync = function (document) {
+      return this.driver
+        .replaceAsync(Table, document, document._id)
+        .then(() => Promise.resolve(true));
+    };
+
 
     this.setAsync = function (id, values) {
       const update = { $set: values };
