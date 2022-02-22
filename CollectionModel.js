@@ -31,10 +31,6 @@ module.exports = function (Table) {
       return this.driver.saveAsync(Table, value);
     };
 
-    this.saveAsync = function (value) {
-      return this.driver.saveAsync(Table, value);
-    };
-
     this.saveAllAsync = function (objects) {
       return this.driver.saveManyAsync(Table, objects);
     }

@@ -185,7 +185,7 @@ CollectionDriver.prototype.toObjectId = function (idAsString) {
 // Return all the element from a given collection that matches a given criteria
 CollectionDriver.prototype.findOneAsync = function (collectionName, criteria) {
   return this.db.collection(collectionName).findOne(criteria).then((res) => {
-    res._id = res._id.toString();
+    if(res !== null) res._id = res._id.toString();
     return res;
   });;
 };

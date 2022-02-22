@@ -1,10 +1,10 @@
 {
   "name": "myeasymongo",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "description": "myeasymongo helps you connect to your mongoDB instance and interact with your collections",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest"
   },
   "author": "Florian BUREL",
   "license": "MIT",
@@ -14,5 +14,8 @@
   },
   "dependencies": {
     "mongodb": "^3.6.9"
+  },
+  "devDependencies": {
+    "jest": "^27.5.1"
   }
 }
