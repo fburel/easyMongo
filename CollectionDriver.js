@@ -73,7 +73,6 @@ CollectionDriver.prototype.saveManyAsync = function(collectionName, array) {
       });
 };
 
-
 CollectionDriver.prototype.replaceAsync = function (
   collectionName,
   obj,
