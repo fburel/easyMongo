@@ -236,7 +236,7 @@ CollectionDriver.prototype.saveManyAsync = function(collectionName, array) {
         });
       })
       .then(res => {
-        return Promise.resolve(res.insertedIds.map(x => x.toString()));
+        return Promise.resolve(res.insertedIds);
       });
 };
 

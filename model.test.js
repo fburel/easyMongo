@@ -28,4 +28,14 @@ test("model", (done) => {
 })
 
 
+test("model", (done) => {
+    Connect(async mongo => {
+        await mongo.posts.saveAllAsync([
+            { author : 'Gils'},
+            { author : 'Top'}
+        ]);
+        done();
+    }).catch(done)
+})
+
 
