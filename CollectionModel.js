@@ -71,14 +71,6 @@ module.exports = function (Table) {
 
     // delete
 
-
-    /**
-    * @deprecated Since version 1.1 Will be deleted in version 1.2 use deleteByIdAsync instead.
-    */
-    this.deleteAsync = function (_id) {
-      return this.driver.deleteAsync(Table, _id);
-    };
-
     this.deleteByIdAsync = function (_id) {
       return this.driver.deleteAsync(Table, _id);
     };
@@ -89,27 +81,11 @@ module.exports = function (Table) {
 
     // update
 
-    /**
-    * @deprecated Since version 1.1 Will be deleted in version 1.2 use replaceAsync instead.
-    */
-    this.updateAsync = function (value) {
-      return this.driver.updateAsync(Table, value, value._id);
-    };
-
     this.replaceAsync = function (value) {
-      return this.driver.updateAsync(Table, value, value._id);
+      return this.driver.replaceAsync(Table, value, value._id);
     };
   
     this.updateByIdAsync = function (id, updater) {
-      return this.driver
-        .updateManyAsync(Table, {_id : this.driver.toObjectId(id) }, updater)
-        .then(() => Promise.resolve(true));
-    };
-
-    /**
-    * @deprecated Since version 1.1 Will be deleted in version 1.2 use updateByIdAsync instead.
-    */
-    this.updateOneAsync = function (id, updater) {
       return this.driver
         .updateManyAsync(Table, {_id : this.driver.toObjectId(id) }, updater)
         .then(() => Promise.resolve(true));
