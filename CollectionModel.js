@@ -128,5 +128,13 @@ module.exports = function (Table) {
         .then(() => Promise.resolve(true));
     };
 
+    // aggregate
+
+    this.aggregateAsync = function (pipeline) {
+      return this.driver
+        .aggregateAsync(Table, pipeline)
+        .then(results => Promise.resolve(results));
+    };
+
   };
 };

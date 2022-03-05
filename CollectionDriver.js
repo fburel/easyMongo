@@ -268,7 +268,7 @@ CollectionDriver.prototype.deleteAsync = function (collectionName, entityId) {
 
 CollectionDriver.prototype.deleteAllAsync = function (
   collectionName,
-  criteria
+  criteria = {}
 ) {
   return this.db.collection(collectionName).deleteMany(criteria);
 };
