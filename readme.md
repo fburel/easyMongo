@@ -35,7 +35,7 @@ Register("post", model); // Register the model with a unique identifier : i.e po
 
 > Note that the model is register with the `post` label. We will use this label later on to access this collection.
 
-A Model comes with the usual CRUD methods : `saveAsync`, `saveAllAsync`, `getbyIdAsync`, `findOneAsync`, `findAllAsync`, `updateAsync`, `updateOneAsync`, `updateManyAsync`, `setAsync`, `deleteAsync`, `deleteAllAsync`... However you might want to add some methods of you own to a specific model.
+A Model comes with the usual CRUD methods : `saveAsync`, `saveAllAsync`, `getbyIdAsync`, `findOneAsync`, `findAllAsync`, `replaceAsync`, `updateByIdAsync`, `updateManyAsync`, `setAsync`, `deleteByIdAsync`, `deleteAllAsync`... However you might want to add some methods of you own to a specific model.
 You can do so by adding method to the model object before registering it.
 In this example we had the bcrypt capability to our user model :
 
