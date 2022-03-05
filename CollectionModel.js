@@ -97,6 +97,12 @@ module.exports = function (Table) {
         .then(() => Promise.resolve(true));
     };
 
+    this.updateOneAsync = function (criteria, updater) {
+      return this.driver
+        .updateOneAsync(Table, criteria, updater)
+        .then(() => Promise.resolve(true));
+    };
+
     this.setAsync = function (id, values) {
       const update = { $set: values };
       return this.driver
