@@ -37,6 +37,22 @@ test("findById After save", async () => {
     })
 })
 
+test("findOne", async () => {
+    await Connect(async mongo => {
+        const saved = await mongo.posts.saveAsync({
+            title : "Node.js is awesome",
+            author: 'flo'
+        });
+
+        const post = await mongo.posts.findOneAsync({ author : "flo"});
+
+        expect(post).toBeDefined();
+        expect(post._id).toBeDefined();
+        expect(post.author).toMatch(/^flo$/);
+    })
+})
+
+
 test("Delete All", async () => {
     await Connect(async mongo => {
 

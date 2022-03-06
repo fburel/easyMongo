@@ -29,8 +29,8 @@ CollectionDriver.prototype.findOneAsync = function (collectionName, criteria) {
   return this.getCollectionAsync(collectionName)
   .then(collection => collection.findOne(criteria))
   .then(result => {
-    if(res !== null) res._id = res._id.toString();
-    return res;
+    if(result !== null) result._id = result._id.toString();
+    return result;
   })
 };
 
