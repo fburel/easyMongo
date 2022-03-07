@@ -163,3 +163,19 @@ test("aggregate", async () => {
         expect(results[0].sum).toEqual(2);
     })
 })
+
+
+test("Delete by ID", async () => {
+    await Connect(async mongo => {
+
+        const saved = await mongo.posts.saveAsync({
+            title : "Node.js is awesome"
+        });
+        const before = await mongo.posts.getByIdAsync(saved._id);
+        expect(before).toBeDefined();
+
+        await mongo.posts.deleteByIdAsync(saved._id);
+        const after =  await mongo.posts.getByIdAsync(saved._id);
+        expect(after).toBeNull();
+    })
+})

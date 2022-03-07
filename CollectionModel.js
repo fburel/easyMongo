@@ -72,7 +72,7 @@ module.exports = function (Table) {
     // delete
 
     this.deleteByIdAsync = function (_id) {
-      return this.driver.deleteAsync(Table, _id);
+      return this.driver.deleteByIdAsync(Table, _id);
     };
 
     this.deleteAllAsync = function deleteAllAsync(criteria) {
