@@ -176,4 +176,10 @@ CollectionDriver.prototype.aggregateAsync = function (
   return this.db.collection(collectionName).aggregate(pipeline).toArray()
 };
 
+CollectionDriver.prototype.countAsync = function (
+  collectionName,
+  query = {}
+) {
+  return this.db.collection(collectionName).countDocuments(query)
+};
 exports.CollectionDriver = CollectionDriver;

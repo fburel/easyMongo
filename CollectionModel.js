@@ -118,5 +118,12 @@ module.exports = function (Table) {
         .then(results => Promise.resolve(results));
     };
 
+    // count
+
+    this.countAsync = function (query = {}) {
+      return this.driver
+        .countAsync(Table, query)
+    };
+
   };
 };

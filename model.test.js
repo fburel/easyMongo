@@ -179,3 +179,30 @@ test("Delete by ID", async () => {
         expect(after).toBeNull();
     })
 })
+
+test("count", async () => {
+    await Connect(async mongo => {
+
+        await mongo.posts.deleteAllAsync();
+        
+        await mongo.posts.saveAsync({
+            title : "I can count"
+        });
+
+        const before = await mongo.posts.countAsync({
+            title : "I can count"
+        });
+
+        expect(before).toEqual(1);
+
+        await mongo.posts.saveAsync({
+            title : "I can count"
+        });
+
+        const after = await mongo.posts.countAsync({
+            title : "I can count"
+        });
+
+        expect(after).toEqual(2);
+    })
+})
