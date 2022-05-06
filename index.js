@@ -51,9 +51,12 @@ exports.Connect = async function onConnection(task, keepAlive = true) {
 
   index.driver = driver;
 
-  await task(index);
+  const res = await task(index);
 
   if (!keepAlive) await client.close();
+
+  return res;
+
 };
 
 exports.ObjectId = function (idAsString) {
