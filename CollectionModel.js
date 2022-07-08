@@ -5,16 +5,16 @@ module.exports = function (Table) {
 
     // get
 
-    this.getByIdAsync = function (_id) {
-      return this.driver.getByIdAsync(Table, _id);
+    this.getByIdAsync = function (_id, project = {}) {
+      return this.driver.getByIdAsync(Table, _id, project);
     };
 
-    this.findAllAsync = function findAllAsync(criteria) {
-      return this.driver.findAllAsync(Table, criteria);
+    this.findAllAsync = function findAllAsync(criteria, project = {}, sort = {}, skip = 0, limit = 0) {
+      return this.driver.findAllAsync(Table, criteria, project, sort, skip, limit);
     };
 
-    this.findOneAsync = function findOneAsync(criteria) {
-      return this.driver.findOneAsync(Table, criteria);
+    this.findOneAsync = function findOneAsync(criteria, sort = {}, project = {}) {
+      return this.driver.findOneAsync(Table, criteria, sort, project);
     };
 
     this.getByPageAsync = function (

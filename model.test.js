@@ -52,7 +52,6 @@ test("findOne", async () => {
     })
 })
 
-
 test("Delete All", async () => {
     await Connect(async mongo => {
 
@@ -164,7 +163,6 @@ test("aggregate", async () => {
     })
 })
 
-
 test("Delete by ID", async () => {
     await Connect(async mongo => {
 
@@ -204,5 +202,84 @@ test("count", async () => {
         });
 
         expect(after).toEqual(2);
+    })
+})
+
+test("find and project", async () => {
+    await Connect(async mongo => {
+
+        // db is empty
+        await mongo.posts.deleteAllAsync();
+       
+        await mongo.posts.saveAllAsync([
+            { title : "Hendrerit ridiculus primis dignissim lectus volutpat facilisis", author : "James Dee Cox", tags : ["one", "two", "three"], rating : 3 },
+            { title : "Ultricies interdum cursus egestas molestie pharetra non", author : "James Dee Cox" , tags : ["one"], rating : 1},
+            { title : "Mattis condimentum ultricies luctus class praesent curabitur", author : "John Appleseed", tags : ["three", "four"], rating : 2 },
+            { title : "Et vita salute proximorum velut.", author : "John Appleseed", tags : ["three", "four"], rating : 4 },
+            { title : "Decernendis suspicione sic alia perpetuae.", author : "Tony Mounti", tags : [], rating : 5 },
+            { title : "Narrare professione me quod cadaveribus.", author : "Fred Consy", tags : ['one', 'six'], rating : 1 },
+            { title : "Montis ad uberi navigabile Isauria.", author : "James Dee Cox", tags : ['seven'], rating : 5 },
+        ]);
+
+        let results = await mongo.posts.findAllAsync({ author : "James Dee Cox" }, { _id: 0, author : 1});
+
+        expect(results.length).toEqual(3);
+
+        results.forEach(x => {
+            expect(x.author).toBeDefined();
+            expect(x.title).toBeUndefined();
+            expect(x.tags).toBeUndefined();
+        })
+
+        results = await mongo.posts.findAllAsync({ author : "James Dee Cox" }, {}, {rating : -1}, 0, 1);
+
+        expect(results.length).toEqual(1);
+        results.forEach(x => {
+            expect(x.rating).toEqual(5);
+        })
+    })
+})
+
+test("projection in findOne", async () => {
+    await Connect(async mongo => {
+
+        // db is empty
+        await mongo.posts.deleteAllAsync();
+       
+        await mongo.posts.saveAllAsync([
+            { title : "Hendrerit ridiculus primis dignissim lectus volutpat facilisis", author : "James Dee Cox", tags : ["one", "two", "three"], rating : 3 },
+            { title : "Ultricies interdum cursus egestas molestie pharetra non", author : "James Dee Cox" , tags : ["one"], rating : 1},
+            { title : "Mattis condimentum ultricies luctus class praesent curabitur", author : "John Appleseed", tags : ["three", "four"], rating : 2 },
+            { title : "Et vita salute proximorum velut.", author : "John Appleseed", tags : ["three", "four"], rating : 4 },
+            { title : "Decernendis suspicione sic alia perpetuae.", author : "Tony Mounti", tags : [], rating : 5 },
+            { title : "Narrare professione me quod cadaveribus.", author : "Fred Consy", tags : ['one', 'six'], rating : 1 },
+            { title : "Montis ad uberi navigabile Isauria.", author : "James Dee Cox", tags : ['seven'], rating : 5 },
+        ]);
+
+        let results = await mongo.posts.findOneAsync({author : "James Dee Cox"}, {rating : -1}, {_id: 0, title : 1});
+
+        expect(results._id).toBeUndefined();
+        expect(results.author).toBeUndefined();
+        expect(results.rating).toBeUndefined();
+        expect(results.title).toEqual('Montis ad uberi navigabile Isauria.');
+        
+        const saved = await mongo.posts.saveAsync({ 
+            title : "Hello world", 
+            author : "Florian BUREL", 
+            tags : ['test'], 
+            content : 'Lorem ipsum',
+            rating : 1 
+        },);
+
+        const post = await mongo.posts.getByIdAsync(saved._id, {_id: 0, content : 1});
+
+       
+
+        expect(post._id).toBeUndefined();
+        expect(post.author).toBeUndefined();
+        expect(post.rating).toBeUndefined();
+        expect(post.title).toBeUndefined();
+        expect(post.content).toEqual('Lorem ipsum');
+
     })
 })

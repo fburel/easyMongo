@@ -25,32 +25,39 @@ CollectionDriver.prototype.toObjectId = function (idAsString) {
 };
 
 // Return all the element from a given collection that matches a given criteria
-CollectionDriver.prototype.findOneAsync = function (collectionName, criteria) {
+CollectionDriver.prototype.findOneAsync = function (collectionName, criteria, sort = {}, project = {}) {
   return this.getCollectionAsync(collectionName)
-  .then(collection => collection.findOne(criteria))
+  .then(collection => collection.findOne(criteria, {
+    sort: sort,
+    projection: project,
+  }))
   .then(result => {
-    if(result !== null) result._id = result._id.toString();
+    if(result !== null && result._id !== undefined) result._id = result._id.toString();
     return result;
   })
 };
 
-CollectionDriver.prototype.getByIdAsync = function (collectionName, objectId) {
+CollectionDriver.prototype.getByIdAsync = function (collectionName, objectId, project = {}) {
   return this.getCollectionAsync(collectionName)
-  .then(collection => collection.findOne({ _id : this.toObjectId(objectId)}))
+  .then(collection => collection.findOne({ _id : this.toObjectId(objectId)}, { sort : {}, projection: project }))
   .then(result => {
-    if(result !== null) result._id = result._id.toString();
+    if(result !== null && result._id !== undefined) result._id = result._id.toString();
     return result;
   })
 };
 
 // Return all the element from a given collection that matches a given criteria
-CollectionDriver.prototype.findAllAsync = function (collectionName, criteria, options =  {}) {
+CollectionDriver.prototype.findAllAsync = function (collectionName, criteria, project= {}, sort = {}, skip = 0, limit = 0) {
   return this.getCollectionAsync(collectionName)
   .then(collection => collection
-      .find(criteria, options)
+      .find(criteria)
+      .project(project)
+      .sort(sort)
+      .skip(skip)
+      .limit(limit)
       .map(x => 
         {
-          x._id = x._id.toString();
+          if(x._id !== undefined) x._id = x._id.toString();
           return x;
         })
       .toArray()
