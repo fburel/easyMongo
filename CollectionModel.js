@@ -87,35 +87,30 @@ module.exports = function (Table) {
   
     this.updateByIdAsync = function (id, updater) {
       return this.driver
-        .updateManyAsync(Table, {_id : this.driver.toObjectId(id) }, updater)
-        .then(() => Promise.resolve(true));
+        .updateManyAsync(Table, {_id : this.driver.toObjectId(id) }, updater);
     };
 
     this.updateManyAsync = function (criteria, updater) {
       return this.driver
-        .updateManyAsync(Table, criteria, updater)
-        .then(() => Promise.resolve(true));
+        .updateManyAsync(Table, criteria, updater);
     };
 
     this.updateOneAsync = function (criteria, updater) {
       return this.driver
-        .updateOneAsync(Table, criteria, updater)
-        .then(() => Promise.resolve(true));
+        .updateOneAsync(Table, criteria, updater);
     };
 
     this.setAsync = function (id, values) {
       const update = { $set: values };
       return this.driver
-        .updateManyAsync(Table, {_id : this.driver.toObjectId(id) },update)
-        .then(() => Promise.resolve(true));
+        .updateManyAsync(Table, {_id : this.driver.toObjectId(id) },update);
     };
 
     // aggregate
 
     this.aggregateAsync = function (pipeline) {
       return this.driver
-        .aggregateAsync(Table, pipeline)
-        .then(results => Promise.resolve(results));
+        .aggregateAsync(Table, pipeline);
     };
 
     // count
