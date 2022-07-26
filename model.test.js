@@ -283,3 +283,116 @@ test("projection in findOne", async () => {
 
     })
 })
+
+test("upsert with an existing document", async () => {
+    await Connect(async mongo => {
+
+        // db is empty
+        await mongo.posts.deleteAllAsync();
+       
+        // create a post
+        const doc = { 
+            title : "Et vita salute proximorum velut.", 
+            author : "John Appleseed", 
+            tags : ["three", "four"], 
+            rating : 5 
+        };
+
+        await mongo.posts.saveAsync(doc);
+
+        // there should be 1 record in the db
+        let count = await mongo.posts.countAsync();
+        expect(count).toEqual(1);
+        
+
+        const updatedDoc = { 
+            title : "Et vita salute proximorum velut.", 
+            author : "John Appleseed", 
+            tags : ["three", "four"], 
+            rating : 5 
+        };
+
+        // try to insert the doc if it doesnt exist
+        await mongo.posts.upsertAsync({
+            title : updatedDoc.title
+        }, {
+            $set : updatedDoc
+        });
+
+        count = await mongo.posts.countAsync();
+        let post = await mongo.posts.findOneAsync({title : updatedDoc.title});
+
+        expect(count).toEqual(1); // number of doc should still be one
+        expect(post.rating).toEqual(5); // the doc should be updated
+
+
+    })
+})
+
+
+test("upsert with non existing document", async () => {
+    await Connect(async mongo => {
+
+        // db is empty
+        await mongo.posts.deleteAllAsync();
+
+        // there should be 0 record in the db
+        let count = await mongo.posts.countAsync();
+        expect(count).toEqual(0);
+        
+        const updatedDoc = { 
+            title : "Et vita salute proximorum velut.", 
+            author : "John Appleseed", 
+            tags : ["three", "four"], 
+            rating : 5 
+        };
+
+        await mongo.posts.upsertAsync({
+            title : updatedDoc.title
+        }, {
+            $set : updatedDoc
+        });
+
+        // the doc should bhave been created
+        let post = await mongo.posts.findOneAsync({title : updatedDoc.title});
+
+        expect(post).toBeDefined();
+        expect(post.rating).toEqual(5);
+
+
+    })
+})
+
+
+test("create if not exist should insert when not exist", async () => {
+    await Connect(async mongo => {
+
+        // db is empty
+        await mongo.posts.deleteAllAsync();
+
+        // there should be 0 record in the db
+        let count = await mongo.posts.countAsync();
+        expect(count).toEqual(0);
+        
+        const docToInsert = { 
+            title : "Et vita salute proximorum velut.", 
+            author : "John Appleseed", 
+            tags : ["three", "four"], 
+            rating : 5 
+        };
+
+        await mongo.posts.insertIfNotFoundAsync({
+            title : docToInsert.title
+        }, docToInsert);
+
+        // the doc should bhave been created
+        let post = await mongo.posts.findOneAsync({title : docToInsert.title});
+
+        expect(post).toBeDefined();
+        expect(post.rating).toEqual(docToInsert.rating);
+        expect(post.title).toEqual(docToInsert.title);
+        expect(post.author).toEqual(docToInsert.author);
+        expect(post.tags).toEqual(docToInsert.tags);
+
+    })
+})

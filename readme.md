@@ -286,6 +286,46 @@ await mongo.post.deleteAllAsync({author : 'Mark'});
 
 ```
 
+Upsert can be used to update a document and, if no document match the query, then create one.
+There is 2 ways to use upsert with myeasymongo :
+
+
+```javascript
+// insert a whole new doc, if none match the query. Existing doc if any won't be updated.
+
+await mongo.post.insertIfNotFoundAsync({
+  email : 'johndoe@myeasymongo.com'
+} , {
+  email : 'johndoe@myeasymongo.com',
+  firstName : 'John'
+  lastName : 'Doe',
+  job : 'Tech Evangelist'
+});
+
+```
+
+```javascript
+// when using upsert async you can pass a full mongo updater object. If a document match the query, it will be updated accordingly, if not a new empty document will be created and the updater will be apply to it.
+
+await mongo.post.upsertAsync({
+  email : 'johndoe@myeasymongo.com'
+} , {
+  $set : {
+    email : 'johndoe@myeasymongo.com',
+    firstName : 'John'
+    lastName : 'Doe',
+    job : 'Tech Evangelist'
+  },
+  $unset : {
+    profilePicture: ''
+  },
+  $addToSet {
+    achievements : "Employee of the year"
+  }
+});
+
+```
+
 ### Aggregation
 
 Performing aggregation query comes in handy very quickly has your project grows...

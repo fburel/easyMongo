@@ -148,9 +148,25 @@ CollectionDriver.prototype.updateManyAsync = function (
   updater.$set = updater.$set || {};
   updater.$set._updated_at = new Date();
 
-  return this.getCollectionAsync(collectionName)
-    .then((collection) => collection.updateMany(criteria, updater))
+  return this.db.collection(collectionName).updateMany(criteria, updater);
 };
+
+CollectionDriver.prototype.upsertAsync = function (
+  collectionName,
+  criteria,
+  updater
+) {
+
+  updater.$set = updater.$set || {};
+  updater.$set._updated_at = new Date();
+
+  updater.$setOnInsert = updater.$setOnInsert || {};
+  updater.$setOnInsert._created_at = new Date();
+  return this.db.collection(collectionName).updateMany(criteria, updater, {
+    upsert: true
+  });
+};
+
 
 
 // DELETE
@@ -189,4 +205,5 @@ CollectionDriver.prototype.countAsync = function (
 ) {
   return this.db.collection(collectionName).countDocuments(query)
 };
+
 exports.CollectionDriver = CollectionDriver;

@@ -106,6 +106,18 @@ module.exports = function (Table) {
         .updateManyAsync(Table, {_id : this.driver.toObjectId(id) },update);
     };
 
+    this.insertIfNotFoundAsync = function (criteria, document) {
+      const update = { $setOnInsert: document };
+      return this.driver
+        .upsertAsync(Table, criteria, update);
+    };
+
+    this.upsertAsync = function (criteria, updater) {
+      return this.driver
+        .upsertAsync(Table, criteria, updater);
+    };
+
+
     // aggregate
 
     this.aggregateAsync = function (pipeline) {
