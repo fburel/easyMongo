@@ -1,4 +1,4 @@
-var ObjectID = require("mongodb").ObjectID;
+var ObjectID = require("./ObjectId");
 
 let CollectionDriver = function (db) {
   this.db = db;
@@ -11,17 +11,6 @@ CollectionDriver.prototype.isConnected = function () {
 CollectionDriver.prototype.getCollectionAsync = function (collectionName) {
   const database = this.db;
   return Promise.resolve(database.collection(collectionName));
-};
-
-function isBSonId(id) {
-  var checkForHexRegExp = new RegExp("^[0-9a-fA-F]{24}$");
-  return checkForHexRegExp.test(id);
-}
-
-CollectionDriver.prototype.toObjectId = function (idAsString) {
-  if(!isBSonId(idAsString)) throw "cannot convert this string into an objectId";
-  return ObjectID(idAsString);
-
 };
 
 // Return all the element from a given collection that matches a given criteria
@@ -39,7 +28,7 @@ CollectionDriver.prototype.findOneAsync = function (collectionName, criteria, so
 
 CollectionDriver.prototype.getByIdAsync = function (collectionName, objectId, project = {}) {
   return this.getCollectionAsync(collectionName)
-  .then(collection => collection.findOne({ _id : this.toObjectId(objectId)}, { sort : {}, projection: project }))
+  .then(collection => collection.findOne({ _id : ObjectID.from(objectId)}, { sort : {}, projection: project }))
   .then(result => {
     if(result !== null && result._id !== undefined) result._id = result._id.toString();
     return result;
@@ -101,9 +90,8 @@ CollectionDriver.prototype.replaceAsync = function (
   obj,
   objectId
 ) {
-  if (!isBSonId(objectId)) throw "Invalid id";
 
-  const id = ObjectID(objectId);
+  const id = ObjectID.from(objectId);
 
   obj._id = id;
   obj._updated_at = new Date();
@@ -124,7 +112,7 @@ CollectionDriver.prototype.updateByIdAsync = function (
   updater.$set = updater.$set || {};
   updater.$set._updated_at = new Date();
 
-  return this.db.collection(collectionName).updateOne({ _id: this.toObjectId(entityId) }, updater);
+  return this.db.collection(collectionName).updateOne({ _id: ObjectID.from(entityId) }, updater);
 };
 
 CollectionDriver.prototype.updateOneAsync = function (
@@ -174,7 +162,7 @@ CollectionDriver.prototype.upsertAsync = function (
 CollectionDriver.prototype.deleteByIdAsync = function (collectionName, entityId) {
   return this.db
     .collection(collectionName)
-    .deleteOne({ _id: this.toObjectId(entityId) });
+    .deleteOne({ _id: ObjectID.from(entityId) });
 };
 
 CollectionDriver.prototype.deleteOneAsync = function (collectionName, criteria) {
@@ -204,6 +192,13 @@ CollectionDriver.prototype.countAsync = function (
   query = {}
 ) {
   return this.db.collection(collectionName).countDocuments(query)
+};
+
+/**
+ * @deprecated: this function is only kept for backward compatibility. It will be remove in a future version. Please use ObjectId.from() instead. 
+ */
+CollectionDriver.prototype.toObjectId = function(id) {
+  return ObjectID.from(id);
 };
 
 exports.CollectionDriver = CollectionDriver;

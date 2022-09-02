@@ -1,6 +1,8 @@
 "use strict";
 
 const { MongoClient } = require("mongodb");
+const { v4: uuidv4 } = require('uuid');
+const ObjectId = require('./ObjectId');
 
 const CollectionDriver = require("./CollectionDriver").CollectionDriver;
 
@@ -16,6 +18,8 @@ function connectToDatabase(uri) {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   });
+
+  client.uuid = uuidv4();
 
   return client.connect().then(() => {
     cachedDb = client;
@@ -59,13 +63,6 @@ exports.Connect = async function onConnection(task, keepAlive = true) {
 
 };
 
-exports.ObjectId = function (idAsString) {
-  function isBSonId(id) {
-    var checkForHexRegExp = new RegExp("^[0-9a-fA-F]{24}$");
-    return checkForHexRegExp.test(id);
-  }
-  if(!isBSonId(idAsString)) throw "cannot convert this string into an objectId";
-  return ObjectID(idAsString);
-};
+exports.ObjectId = ObjectId;
 
 exports.Model = require("./CollectionModel");

@@ -1,3 +1,5 @@
+const ObjectId = require("./ObjectId");
+
 module.exports = function (Table) {
   
   return function (driver) {
@@ -87,7 +89,7 @@ module.exports = function (Table) {
   
     this.updateByIdAsync = function (id, updater) {
       return this.driver
-        .updateManyAsync(Table, {_id : this.driver.toObjectId(id) }, updater);
+        .updateManyAsync(Table, {_id : ObjectId.from(id) }, updater);
     };
 
     this.updateManyAsync = function (criteria, updater) {
@@ -103,7 +105,7 @@ module.exports = function (Table) {
     this.setAsync = function (id, values) {
       const update = { $set: values };
       return this.driver
-        .updateManyAsync(Table, {_id : this.driver.toObjectId(id) },update);
+        .updateManyAsync(Table, {_id : ObjectId.from(id) },update);
     };
 
     this.insertIfNotFoundAsync = function (criteria, document) {

@@ -1,9 +1,8 @@
-const {toObjectId, Connect, Register, Model} = require('./index');
+const {ObjectId, Connect, Register, Model} = require('../index');
 
 jest.setTimeout("10000")
 
 process.env.MONGO = "mongodb+srv://everybody:1234@cluster0.ngs8m.mongodb.net/main?retryWrites=true&w=majority";
-
 
 Register("posts", Model("__TEST"));
 
