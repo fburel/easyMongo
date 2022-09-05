@@ -22,41 +22,48 @@ module.exports = function (Table) {
     this.getByPageAsync = function (
       pageNumber,
       pageSize = 50,
-      match = {},
-      sort = { _updated_at: -1 }
+      match = null,
+      project = null,
+      sort = null,
     ) {
-      let pipeline = [
-        {
-          $match: match,
-        },
-        {
-          $sort: sort,
-        },
-        {
-          $group: {
-            _id: null,
-            total: {
-              $sum: 1,
-            },
-            data: {
-              $push: "$$ROOT",
-            },
+      let pipe = [];
+      if(match) pipe.push({
+        $match: match,
+      });
+      if(project) pipe.push({
+        $project: project,
+      });
+      if(sort) pipe.push({
+        $sort: sort,
+      });
+
+      // group element
+      pipe.push( {
+        $group: {
+          _id: null,
+          total: {
+            $sum: 1,
+          },
+          data: {
+            $push: "$$ROOT",
           },
         },
-        {
-          $project: {
-            _id: 0,
-            pages: {
-              $ceil: {
-                $divide: ["$total", pageSize],
-              },
-            },
-            items: {
-              $slice: ["$data", (pageNumber - 1) * pageSize, pageSize],
+      })
+
+      // return the page
+      pipe.push({
+        $project: {
+          _id: 0,
+          pageCount: {
+            $ceil: {
+              $divide: ["$total", pageSize],
             },
           },
+          items: {
+            $slice: ["$data", (pageNumber - 1) * pageSize, pageSize],
+          },
         },
-      ];
+      },)
 
       return this.driver.aggregateAsync(Table, pipeline).then((array) => array[0]);
     };
