@@ -65,7 +65,7 @@ module.exports = function (Table) {
         },
       },)
 
-      return this.driver.aggregateAsync(Table, pipeline).then((array) => array[0]);
+      return this.driver.aggregateAsync(Table, pipe).then((array) => array[0]);
     };
 
     // save 
