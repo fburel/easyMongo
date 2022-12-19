@@ -72,6 +72,10 @@ CollectionDriver.prototype.saveAsync = function (collectionName, obj) {
 // Save a the given object into the given collection
 CollectionDriver.prototype.saveManyAsync = function(collectionName, array) {
 
+  array.forEach(obj => {
+    obj._created_at = new Date();
+  });
+  
   return this.getCollectionAsync(collectionName)
       .then(collection => {
         return collection.insertMany(array, {
