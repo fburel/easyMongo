@@ -1,15 +1,15 @@
-# EasyMongo
+# MyEasyMongo
 
 ## Description
 
-easyMongo helps you connect to your mongoDB instance and interact with your collections
+`myeasymongo` helps you connect to your mongoDB instance and interact with your collections
 
 ## installation 
 
 You can install this package with NPM
-`npm install easyMongo --save`
+`npm install myeasymongo --save`
 
-## Configuration
+## Usage
 
 ### Set the connection string to the DB
 
@@ -17,7 +17,7 @@ this package looks for a connection string in the MONGO environment variable.
 Before using, make sure to configure your working environment accordingly.
 
 ``` shell
-MONGO=mongodb+srv://..../myDatabase?retryWrites=true&w=majority
+MONGO=mongodb+srv://<user>:<pwd>@<cluster_ip>/<database>?retryWrites=true&w=majority
 ```
 
 ### Register you collections using Models
@@ -30,12 +30,16 @@ Registering a Model is easy,for example let's create a model for a `Post` collec
 
 const { Model, Register } = require('myeasymongo');
 const model = Model("Post"); // the table of the collection in MongoDB
-Register("post", model); // Register the model with a unique identifier : i.e post. Once registered, the model will be available under the `post` property of the driver
+Register("posts", model); // Register the model with a unique identifier : i.e posts. Once registered, the model will be available under the `posts` property of the driver
 ```
 
-> Note that the model is register with the `post` label. We will use this label later on to access this collection.
+> Note that the model is register with the `posts` label. We will use this label later on to access this collection.
 
-A Model comes with the usual CRUD methods : `saveAsync`, `saveAllAsync`, `getbyIdAsync`, `findOneAsync`, `findAllAsync`, `replaceAsync`, `updateByIdAsync`, `updateManyAsync`, `setAsync`, `deleteByIdAsync`, `deleteAllAsync`, `countAsync`... However you might want to add some methods of you own to a specific model.
+### Add capabilities to a model
+
+A Model comes with the usual CRUD methods : `getbyIdAsync`, `findAllAsync`, `findOneAsync`, `getByPageAsync`, `saveAsync`, `saveAllAsync`, `deleteByIdAsync`, `deleteAllAsync`, `replaceAsync`, `updateByIdAsync`, `updateManyAsync`, `updateOneAsync`, `insertIfNotFoundAsync`, `upsertAsync`, `setAsync`,   `countAsync`, `aggregateAsync` ... 
+
+However you might want to add some methods of you own to a specific model.
 You can do so by adding method to the model object before registering it.
 In this example we had the bcrypt capability to our user model :
 
@@ -80,24 +84,58 @@ model.prototype.hash = function (password) {
 }
 
 Register('user', model);
-````
+```
 
 Now the `user` model has 2 extra methods: `checkPassword` and `hash`.
+
+### Connecting and Accessing the model
+
+In order to use your model and actually start coding database stuff, you need to use the Connect function to initiate a connection to the db.
+The connect function takes a callback in wich you can play with the received driver.
+the driver contains all your registered model.
+
+```javascript
+
+const { Connect } = require('myeasymongo');
+
+// import your model files
+require('./model/posts');
+require('./model/users')
+
+await Connect(async function (mongo) {
+
+    try{
+        await mongo.posts.saveAsync({
+          title : "Lorem Ipsum",
+          author : 'John Doe',
+          content : 'TBD'
+        });
+    } catch (e) {
+        console.log('error');
+        console.log(e);
+    }
+});
+```
 
 ### Pro tip : importing all your model at once
 
 As your project grow, you might find that you have more and more collection, each with special need and custom method (i.e. aggregation helper).
-I find it cleaner to have a folder containing all my model declaration, a js file per model, and to load them all early on in the project using a package like auto load to do so:
+I find it cleaner to have a folder containing all my model declaration, a js file per model, and to load them all early on in the project using a package like auto load to do so. For instance, in the previous code, the lines :
+``` javascript
+require('./model/posts');
+require('./model/users')
+```
+could be replaced by :
 
 ```javascript
 require('auto-load')('./routes/model');
 ```
 
-### Creating the database object (Express)
+A small win when only 2 model files exist, but a life saver as you add more of them and don't have to think about importing them.
 
-Now that your models have been declared an imported, you need to establish the connection to the db so you can get the myeasymongo driver and start performing request.
-Using Express, I recommand implementing a middleware that will be called for each route needing acces to the DB.
-The middleware will conect to the db and store the myeasymongo driver in the req object so subsequent method can access it directly.
+### Creating an Express middleware
+
+For those times when you create an api, you have to handle some routes, and some of them needs a running connection to your mongoDB instance. I admit I find it painfull to have to call the `Connect` method in every endpoint handler so I came up with a middleware that will, beforehand, to the Connect thingy and pass the mongo instance down the middleware line.
 
 Let's create a `makeModel.js` file
 
@@ -122,52 +160,55 @@ module.exports = async function(req, res, next) {
     next(e);
   }
 };
-````
+```
 
-Then add the middleware to the route that need access to the db. By doing so, your code can access the req.model object and perform db related tasks directly.
+Then add the middleware to the routes handler that need access to the db. By doing so, your code can access the req.model object and perform db related tasks directly.
 
 ```javascript
 const makeModel = require("./middleware/makeModel");
 
 router.get('/posts', makeModel, function(req, res, next){
-    const posts = await req.model.post.findAllAsync();
+    const posts = await req.model.post.findAllAsync({});
     res.json(posts);
 });
 ```
 
-### Creating the database object (alternate version)
+### Testing with JEST
 
-Once your model file have been imported, you can use the Connect function to initiate a connection to the db.
-The connect function takes a callback in wich you can play with the received driver.
-the driver contains all your registered model.
+I can be usefull when testing your own code to access the uderneath database to check if the data retrieved or save is what it should be.
+When using the jest testing tool, you can create your custom `testWithMongo` method that will connect to the DB and deliver the mongo driver with the loaded model before running your actual test:
 
-```javascript
+``` javascript
 
 const { Connect } = require('myeasymongo');
-require('auto-load')('./model');
+require('auto-load')('./src/model');
 
-await Connect(async function (mongo) {
-
-    try{
-        await mongo.post.updateAllAsync({
-            categorie : { $exists : false}
-        }, {
-            $set : {
-                categorie : 'default'
-            }
+const testWithMongo = function(txt, handler){
+    // overrides the jest test method
+    test(txt, async () => {
+        // Make sure your process.env.MONGO is set to target the correct database.
+        // if you need to, you can override the connection string for the tests by providing a setup.js file to the jest command line or override it directly here
+        // process.env.MONGO = <connection string to the test database>
+        await Connect(mongo => {
+            return handler(mongo);
         })
-    } catch (e) {
-        console.log('error');
-        console.log(e);
-    }
-});
+    })
+}
+
+testWithMongo("Models should be imported in the mongo object", async (mongo) => {
+    expect(mongo.posts).toBeDefined();
+    expect(mongo.users).toBeDefined();
+})
+
+
 ```
+
 
 ## API
 
 ### creating an object id form a string
 
-Parfois necessaire pour des aggregations:
+_id fields are, as often as possible, treated as string. That means that in methods such as `doSomethingByIdAsync` or `setAsync`, the `_id` value is expected to be a `string`, the conversion of that `string` to a `MongoDB.ObjectId` happens behind the curtain. Hoewever, sometimes, while writing aggregation pipelines mainly, you might need to write a proper `ObjectId` value. `myeasymongo` comes with the tool for the job:
 
 ```javascript
 const { ObjectId } = require('myeasymongo');
@@ -176,8 +217,7 @@ const id = ObjectId("618a05bea5e689590685043c");
 
 ### CRUD
 
-utiliser le label associer a votre model pour invoquer les fonctions. Toutes les fonction retourne sont awaitable.
-When fetching object, the _id field is automaticly rewrote to a string instead of a bson object so it's easier to manipulate
+When fetching object, the `_id` field is automaticly rewrote to a `string` so it's easier to manipulate :
 
 ```javascript
 // find by id (id is given as a string)

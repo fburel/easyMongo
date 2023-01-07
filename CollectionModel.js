@@ -7,7 +7,7 @@ module.exports = function (Table) {
 
     // get
 
-    this.getByIdAsync = function (_id, project = {}) {
+    this.getByIdAsync = function (_id, project = null) {
       return this.driver.getByIdAsync(Table, _id, project);
     };
 
@@ -126,20 +126,20 @@ module.exports = function (Table) {
         .upsertAsync(Table, criteria, updater);
     };
 
-
-    // aggregate
-
-    this.aggregateAsync = function (pipeline) {
-      return this.driver
-        .aggregateAsync(Table, pipeline);
-    };
-
     // count
 
     this.countAsync = function (query = {}) {
       return this.driver
         .countAsync(Table, query)
     };
+
+    // aggregate
+
+    this.aggregateAsync = function (pipeline) {
+        return this.driver
+          .aggregateAsync(Table, pipeline);
+      };
+  
 
   };
 };

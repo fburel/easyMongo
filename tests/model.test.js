@@ -9,16 +9,24 @@ jest.setTimeout("10000")
 
 Register("posts", Model("__TEST"));
 
-const testWithMongo = function(txt, holder){
+
+/**
+ * Overrides of the jest test(string, () = ()) method to pass to the handler a mongo instance
+ * @param {*} txt : the detail of the test, as you would pass to JEST
+ * @param {*} handler : async(mongo) => {} 
+ */
+const testWithMongo = function(txt, handler){
     test(txt, async () => {
         await Connect(mongo => {
-            return holder(mongo);
+            return handler(mongo);
         })
     })
 }
 
 testWithMongo("test with mongo", async (mongo) => {
-    expect(mongo).toBeDefined();
+    expect(mongo.posts).toBeDefined();
+    expect(mongo.isConnected).toBeTruthy();
+    
 })
 
 testWithMongo("save in db", async(mongo) => {
