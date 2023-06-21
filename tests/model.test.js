@@ -13,7 +13,7 @@ Register("posts", Model("__TEST"));
 /**
  * Overrides of the jest test(string, () = ()) method to pass to the handler a mongo instance
  * @param {*} txt : the detail of the test, as you would pass to JEST
- * @param {*} handler : async(mongo) => {} 
+ * @param {*} handler : async(mongo) => {}
  */
 const testWithMongo = function(txt, handler){
     test(txt, async () => {
@@ -26,7 +26,7 @@ const testWithMongo = function(txt, handler){
 testWithMongo("test with mongo", async (mongo) => {
     expect(mongo.posts).toBeDefined();
     expect(mongo.isConnected).toBeTruthy();
-    
+
 })
 
 testWithMongo("save in db", async(mongo) => {
@@ -60,6 +60,7 @@ testWithMongo("findOne", async (mongo) => {
     expect(post).toBeDefined();
     expect(post._id).toBeDefined();
     expect(post.author).toMatch(/^flo$/);
+    expect(post.title).toBe("Node.js is awesome")
 })
 
 testWithMongo("Delete All", async (mongo) => {
@@ -78,7 +79,7 @@ testWithMongo("Delete All", async (mongo) => {
 testWithMongo("Save Many", async (mongo) => {
      // db is empty
      await mongo.posts.deleteAllAsync();
-       
+
      const saved = await mongo.posts.saveAllAsync([
          { title : "Hendrerit ridiculus primis dignissim lectus volutpat facilisis" },
          { title : "Ultricies interdum cursus egestas molestie pharetra non" },
@@ -134,7 +135,7 @@ testWithMongo("Updates", async (mongo) => {
     expect(test2.author).toMatch(/^flo$/);
 
 
-    await mongo.posts.updateByIdAsync(_id, { 
+    await mongo.posts.updateByIdAsync(_id, {
         $unset : { status : 0 },
         $set : { author : "fl0"}
     });
@@ -144,7 +145,7 @@ testWithMongo("Updates", async (mongo) => {
 
     await mongo.posts.updateManyAsync({
         author : {$exists : true}
-    }, { 
+    }, {
         $unset : { author : 0 },
     });
 
@@ -156,7 +157,7 @@ testWithMongo("Updates", async (mongo) => {
 testWithMongo("aggregate", async (mongo) => {
     // db is empty
     await mongo.posts.deleteAllAsync();
-       
+
     const saved = await mongo.posts.saveAllAsync([
         { title : "Hendrerit ridiculus primis dignissim lectus volutpat facilisis", author: 'flo' },
         { title : "Ultricies interdum cursus egestas molestie pharetra non", author: 'flo' },
@@ -198,7 +199,7 @@ testWithMongo("Delete by ID", async (mongo) => {
 
 testWithMongo("count", async (mongo) => {
     await mongo.posts.deleteAllAsync();
-        
+
     await mongo.posts.saveAsync({
         title : "I can count"
     });
@@ -223,7 +224,7 @@ testWithMongo("count", async (mongo) => {
 testWithMongo("find and project", async (mongo) => {
     // db is empty
     await mongo.posts.deleteAllAsync();
-       
+
     await mongo.posts.saveAllAsync([
         { title : "Hendrerit ridiculus primis dignissim lectus volutpat facilisis", author : "James Dee Cox", tags : ["one", "two", "three"], rating : 3 },
         { title : "Ultricies interdum cursus egestas molestie pharetra non", author : "James Dee Cox" , tags : ["one"], rating : 1},
@@ -255,7 +256,7 @@ testWithMongo("find and project", async (mongo) => {
 testWithMongo("projection in findOne", async (mongo) => {
     // db is empty
     await mongo.posts.deleteAllAsync();
-       
+
     await mongo.posts.saveAllAsync([
         { title : "Hendrerit ridiculus primis dignissim lectus volutpat facilisis", author : "James Dee Cox", tags : ["one", "two", "three"], rating : 3 },
         { title : "Ultricies interdum cursus egestas molestie pharetra non", author : "James Dee Cox" , tags : ["one"], rating : 1},
@@ -266,42 +267,32 @@ testWithMongo("projection in findOne", async (mongo) => {
         { title : "Montis ad uberi navigabile Isauria.", author : "James Dee Cox", tags : ['seven'], rating : 5 },
     ]);
 
-    let results = await mongo.posts.findOneAsync({author : "James Dee Cox"}, {rating : -1}, {_id: 0, title : 1});
+    let result = await mongo.posts.findOneAsync({author : "Fred Consy"}, {_id: 0, title : 1});
 
-    expect(results._id).toBeUndefined();
-    expect(results.author).toBeUndefined();
-    expect(results.rating).toBeUndefined();
-    expect(results.title).toEqual('Montis ad uberi navigabile Isauria.');
-    
-    const saved = await mongo.posts.saveAsync({ 
-        title : "Hello world", 
-        author : "Florian BUREL", 
-        tags : ['test'], 
-        content : 'Lorem ipsum',
-        rating : 1 
-    },);
+    expect(result).toBeDefined();
+    expect(result._id).toBeUndefined();
+    expect(result.author).toBeUndefined();
+    expect(result.rating).toBeUndefined();
+    expect(result.title).toEqual('Narrare professione me quod cadaveribus.');
 
-    const post = await mongo.posts.getByIdAsync(saved._id, {_id: 0, content : 1});
+    result = await mongo.posts.findOneAsync({author : "James Dee Cox"}, undefined, {rating : -1});
+    expect(result.title).toEqual('Montis ad uberi navigabile Isauria.');
 
-   
+    result = await mongo.posts.findOneAsync({author : "James Dee Cox"}, undefined, {rating : 1});
+    expect(result.title).toEqual('Ultricies interdum cursus egestas molestie pharetra non');
 
-    expect(post._id).toBeUndefined();
-    expect(post.author).toBeUndefined();
-    expect(post.rating).toBeUndefined();
-    expect(post.title).toBeUndefined();
-    expect(post.content).toEqual('Lorem ipsum');
 })
 
 testWithMongo("upsert with an existing document", async (mongo) => {
     // db is empty
     await mongo.posts.deleteAllAsync();
-       
+
     // create a post
-    const doc = { 
-        title : "Et vita salute proximorum velut.", 
-        author : "John Appleseed", 
-        tags : ["three", "four"], 
-        rating : 5 
+    const doc = {
+        title : "Et vita salute proximorum velut.",
+        author : "John Appleseed",
+        tags : ["three", "four"],
+        rating : 5
     };
 
     await mongo.posts.saveAsync(doc);
@@ -309,13 +300,13 @@ testWithMongo("upsert with an existing document", async (mongo) => {
     // there should be 1 record in the db
     let count = await mongo.posts.countAsync();
     expect(count).toEqual(1);
-    
 
-    const updatedDoc = { 
-        title : "Et vita salute proximorum velut.", 
-        author : "John Appleseed", 
-        tags : ["three", "four"], 
-        rating : 5 
+
+    const updatedDoc = {
+        title : "Et vita salute proximorum velut.",
+        author : "John Appleseed",
+        tags : ["three", "four"],
+        rating : 5
     };
 
     // try to insert the doc if it doesnt exist
@@ -340,12 +331,12 @@ testWithMongo("upsert with non existing document", async (mongo) => {
     // there should be 0 record in the db
     let count = await mongo.posts.countAsync();
     expect(count).toEqual(0);
-    
-    const updatedDoc = { 
-        title : "Et vita salute proximorum velut.", 
-        author : "John Appleseed", 
-        tags : ["three", "four"], 
-        rating : 5 
+
+    const updatedDoc = {
+        title : "Et vita salute proximorum velut.",
+        author : "John Appleseed",
+        tags : ["three", "four"],
+        rating : 5
     };
 
     await mongo.posts.upsertAsync({
@@ -370,12 +361,12 @@ testWithMongo("create if not exist should insert when not exist", async (mongo) 
     // there should be 0 record in the db
     let count = await mongo.posts.countAsync();
     expect(count).toEqual(0);
-    
-    const docToInsert = { 
-        title : "Et vita salute proximorum velut.", 
-        author : "John Appleseed", 
-        tags : ["three", "four"], 
-        rating : 5 
+
+    const docToInsert = {
+        title : "Et vita salute proximorum velut.",
+        author : "John Appleseed",
+        tags : ["three", "four"],
+        rating : 5
     };
 
     await mongo.posts.insertIfNotFoundAsync({

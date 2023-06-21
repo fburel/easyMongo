@@ -14,11 +14,11 @@ CollectionDriver.prototype.getCollectionAsync = function (collectionName) {
 };
 
 // Return all the element from a given collection that matches a given criteria
-CollectionDriver.prototype.findOneAsync = function (collectionName, criteria, sort = {}, project = {}) {
+CollectionDriver.prototype.findOneAsync = function (collectionName, criteria = {}, project = undefined, sort = {}) {
   return this.getCollectionAsync(collectionName)
   .then(collection => collection.findOne(criteria, {
-    sort: sort,
     projection: project,
+    sort : sort
   }))
   .then(result => {
     if(result !== null && result._id !== undefined) result._id = result._id.toString();
@@ -44,7 +44,7 @@ CollectionDriver.prototype.findAllAsync = function (collectionName, criteria, pr
       .sort(sort)
       .skip(skip)
       .limit(limit)
-      .map(x => 
+      .map(x =>
         {
           if(x._id !== undefined) x._id = x._id.toString();
           return x;
@@ -75,7 +75,7 @@ CollectionDriver.prototype.saveManyAsync = function(collectionName, array) {
   array.forEach(obj => {
     obj._created_at = new Date();
   });
-  
+
   return this.getCollectionAsync(collectionName)
       .then(collection => {
         return collection.insertMany(array, {
@@ -199,7 +199,7 @@ CollectionDriver.prototype.countAsync = function (
 };
 
 /**
- * @deprecated: this function is only kept for backward compatibility. It will be remove in a future version. Please use ObjectId.from() instead. 
+ * @deprecated: this function is only kept for backward compatibility. It will be remove in a future version. Please use ObjectId.from() instead.
  */
 CollectionDriver.prototype.toObjectId = function(id) {
   return ObjectID.from(id);

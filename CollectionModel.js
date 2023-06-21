@@ -1,7 +1,7 @@
 const ObjectId = require("./ObjectId");
 
 module.exports = function (Table) {
-  
+
   return function (driver) {
     this.driver = driver;
 
@@ -15,8 +15,8 @@ module.exports = function (Table) {
       return this.driver.findAllAsync(Table, criteria, project, sort, skip, limit);
     };
 
-    this.findOneAsync = function findOneAsync(criteria, sort = {}, project = {}) {
-      return this.driver.findOneAsync(Table, criteria, sort, project);
+    this.findOneAsync = function findOneAsync(criteria, projection = {}, sort = {}) {
+      return this.driver.findOneAsync(Table, criteria, projection, sort);
     };
 
     this.getByPageAsync = function (
@@ -68,7 +68,7 @@ module.exports = function (Table) {
       return this.driver.aggregateAsync(Table, pipe).then((array) => array[0]);
     };
 
-    // save 
+    // save
 
     this.saveAsync = function (value) {
       return this.driver.saveAsync(Table, value);
@@ -93,7 +93,7 @@ module.exports = function (Table) {
     this.replaceAsync = function (value) {
       return this.driver.replaceAsync(Table, value, value._id);
     };
-  
+
     this.updateByIdAsync = function (id, updater) {
       return this.driver
         .updateManyAsync(Table, {_id : ObjectId.from(id) }, updater);
@@ -139,7 +139,7 @@ module.exports = function (Table) {
         return this.driver
           .aggregateAsync(Table, pipeline);
       };
-  
+
 
   };
 };
