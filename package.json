@@ -1,10 +1,11 @@
 {
   "name": "myeasymongo",
-  "version": "2.2.2",
+  "version": "2.3.1",
   "description": "myeasymongo helps you connect to your mongoDB instance and interact with your collections",
   "main": "index.js",
   "scripts": {
-    "test": "export $(cat .env | xargs) && jest"
+    "test": "vitest run",
+    "deploy" :"export NPMRC=$(cat ~/.npmrc | xargs) && docker build --build-arg var_name=${NPMRC} -t myeasymongo . && docker run myeasymongo"
   },
   "author": "Florian BUREL",
   "license": "MIT",
@@ -13,10 +14,11 @@
     "url": "https://github.com/fburel/easyMongo.git"
   },
   "dependencies": {
-    "mongodb": "^4.4",
-    "uuid": "^8.3.2"
+    "mongodb": "^6.8.0",
+    "uuid": "^10.0.0"
   },
   "devDependencies": {
-    "jest": "^27.5.1"
+    "mongodb-memory-server": "^10.0.0",
+    "vitest": "^2.0.5"
   }
 }
