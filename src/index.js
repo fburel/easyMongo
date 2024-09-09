@@ -14,10 +14,7 @@ function connectToDatabase(uri) {
     return Promise.resolve(cachedDb);
   }
 
-  const client = new MongoClient(uri, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  });
+  const client = new MongoClient(uri, { });
 
   client.uuid = uuidv4();
 
