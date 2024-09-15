@@ -92,11 +92,11 @@ module.exports = function (Table) {
       });
 
       pipe.push({
-        skip : (pageNumber - 1) * pageSize
+        $skip : (pageNumber - 1) * pageSize
       })
 
       pipe.push({
-        limit : pageSize
+        $limit : pageSize
       })
 
       if(project) pipe.push({
