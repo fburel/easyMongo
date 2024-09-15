@@ -19,6 +19,9 @@ module.exports = function (Table) {
       return this.driver.findOneAsync(Table, criteria, projection, sort);
     };
 
+    /**
+     * @deprecated since version 2.5.3. Will be remove in future version, please use fetchPageAsync
+     */
     this.getByPageAsync = function (
       pageNumber,
       pageSize = 50,
@@ -67,6 +70,55 @@ module.exports = function (Table) {
 
       return this.driver.aggregateAsync(Table, pipe).then((array) => array[0]);
     };
+
+    /**
+     * return the list of record matching a certain criteria in a page per page fashion.
+     */
+    this.fetchPageAsync = function (
+        match = {},
+        sort = {},
+        project = null,
+        pageNumber = 1,
+        pageSize = 50,
+    ) {
+      let pipe = [];
+
+      if(match) pipe.push({
+        $match: match,
+      });
+
+      if(sort) pipe.push({
+        $sort: sort,
+      });
+
+      pipe.push({
+        skip : (pageNumber - 1) * pageSize
+      })
+
+      pipe.push({
+        limit : pageSize
+      })
+
+      if(project) pipe.push({
+        $project: project,
+      });
+
+      // group element
+      pipe.push( {
+        $group: {
+          _id: null,
+          size: {
+            $sum: 1,
+          },
+          items: {
+            $push: "$$ROOT",
+          }
+        },
+      })
+
+      return this.driver.aggregateAsync(Table, pipe).then((array) => array[0]);
+    };
+
 
     // save
 
