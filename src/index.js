@@ -29,34 +29,42 @@ exports.Register = function(name, collection){
 }
 
 exports.Connect = async function onConnection(task, keepAlive = true) {
-  const URI = process.env.MONGO;
 
-  if (URI.length < 1) {
-    const err =
-      "The connection uri to your mongo databse is not set. Make sure to provide the connection string in the 'MONGO' environment variable";
-    console.log(err);
-    throw err;
+  try {
+    const URI = process.env.MONGO;
+
+    if (URI.length < 1) {
+      const err =
+        "The connection uri to your mongo databse is not set. Make sure to provide the connection string in the 'MONGO' environment variable";
+      console.log(err);
+      throw err;
+    }
+  
+    const client = await connectToDatabase(URI);
+    const driver = new CollectionDriver(client.db());
+    let index = {};
+    for(const cl in registred) {
+      const f = registred[cl];
+      index[cl] = new f(driver);
+    }
+  
+    index.isConnected = function() {
+      return driver.isConnected()
+    }
+  
+    index.driver = driver;
+  
+    const res = await task(index);
+  
+    if (!keepAlive) await client.close();
+  
+    return res;
+  }
+  catch(e)
+  {
+    return task(null, e);
   }
 
-  const client = await connectToDatabase(URI);
-  const driver = new CollectionDriver(client.db());
-  let index = {};
-  for(const cl in registred) {
-    const f = registred[cl];
-    index[cl] = new f(driver);
-  }
-
-  index.isConnected = function() {
-    return driver.isConnected()
-  }
-
-  index.driver = driver;
-
-  const res = await task(index);
-
-  if (!keepAlive) await client.close();
-
-  return res;
 
 };
 
