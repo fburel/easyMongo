@@ -20,58 +20,6 @@ module.exports = function (Table) {
     };
 
     /**
-     * @deprecated since version 2.5.3. Will be remove in future version, please use fetchPageAsync
-     */
-    this.getByPageAsync = function (
-      pageNumber,
-      pageSize = 50,
-      match = null,
-      project = null,
-      sort = null,
-    ) {
-      let pipe = [];
-      if(match) pipe.push({
-        $match: match,
-      });
-      if(project) pipe.push({
-        $project: project,
-      });
-      if(sort) pipe.push({
-        $sort: sort,
-      });
-
-      // group element
-      pipe.push( {
-        $group: {
-          _id: null,
-          total: {
-            $sum: 1,
-          },
-          data: {
-            $push: "$$ROOT",
-          },
-        },
-      })
-
-      // return the page
-      pipe.push({
-        $project: {
-          _id: 0,
-          pageCount: {
-            $ceil: {
-              $divide: ["$total", pageSize],
-            },
-          },
-          items: {
-            $slice: ["$data", (pageNumber - 1) * pageSize, pageSize],
-          },
-        },
-      },)
-
-      return this.driver.aggregateAsync(Table, pipe).then((array) => array[0]);
-    };
-
-    /**
      * return the list of record matching a certain criteria in a page per page fashion.
      */
     this.fetchPageAsync = function (

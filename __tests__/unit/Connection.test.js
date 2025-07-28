@@ -50,7 +50,7 @@ describe("test connection and model availability", () => {
 
     it("should make base method available", async () => {
 
-        expect.assertions(17);
+        expect.assertions(16);
 
         const Table = randomString(5);
         const model = Model(Table);
@@ -61,7 +61,6 @@ describe("test connection and model availability", () => {
             expect(model[Table].getByIdAsync).toBeDefined();
             expect(model[Table].findAllAsync).toBeDefined();
             expect(model[Table].findOneAsync).toBeDefined();
-            expect(model[Table].getByPageAsync).toBeDefined();
             expect(model[Table].countAsync).toBeDefined();
             expect(model[Table].aggregateAsync).toBeDefined();
 

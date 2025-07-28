@@ -198,11 +198,4 @@ CollectionDriver.prototype.countAsync = function (
   return this.db.collection(collectionName).countDocuments(query)
 };
 
-/**
- * @deprecated: this function is only kept for backward compatibility. It will be remove in a future version. Please use ObjectId.from() instead.
- */
-CollectionDriver.prototype.toObjectId = function(id) {
-  return ObjectID.from(id);
-};
-
 exports.CollectionDriver = CollectionDriver;

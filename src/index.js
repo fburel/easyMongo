@@ -6,20 +6,20 @@ const ObjectId = require('./ObjectId');
 
 const CollectionDriver = require("./CollectionDriver").CollectionDriver;
 
-let cachedDb = null;
 let registred = {};
+const clients = {};
 
 function connectToDatabase(uri) {
-  if (cachedDb) {
-    return Promise.resolve(cachedDb);
+  if (clients[uri]) {
+    return Promise.resolve(clients[uri]);
   }
 
-  const client = new MongoClient(uri, { });
+  const client = new MongoClient(uri, {});
 
   client.uuid = uuidv4();
 
   return client.connect().then(() => {
-    cachedDb = client;
+    clients[uri] = client;
     return client;
   });
 }
@@ -41,11 +41,12 @@ exports.Connect = async function onConnection(task, keepAlive = true) {
     }
   
     const client = await connectToDatabase(URI);
-    const driver = new CollectionDriver(client.db());
+    const db = client.db();
+    const driver = new CollectionDriver(db);
     let index = {};
     for(const cl in registred) {
-      const f = registred[cl];
-      index[cl] = new f(driver);
+      const Model = registred[cl];
+      index[cl] = new Model(driver);
     }
   
     index.isConnected = function() {
@@ -62,6 +63,7 @@ exports.Connect = async function onConnection(task, keepAlive = true) {
   }
   catch(e)
   {
+    console.error(e);
     return task(null, e);
   }
 
