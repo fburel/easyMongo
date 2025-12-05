@@ -154,8 +154,9 @@ CollectionDriver.prototype.upsertAsync = function (
 
   updater.$setOnInsert = updater.$setOnInsert || {};
   updater.$setOnInsert._created_at = new Date();
-  return this.db.collection(collectionName).updateMany(criteria, updater, {
-    upsert: true
+  return this.db.collection(collectionName).findOneAndUpdate(criteria, updater, {
+    upsert: true,
+      returnDocument: "after"
   });
 };
 
