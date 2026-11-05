@@ -72,6 +72,6 @@ Only on the maintainer's request.
 
 1. Bump `version` in `package.json` **and** `claude-plugin/.claude-plugin/plugin.json` (same value; Claude Code uses it to detect plugin updates). Add the changes to the readme "Upgrading" section if needed.
 2. `claude plugin validate ./claude-plugin && claude plugin validate .` if the plugin or the skill changed.
-3. `npm run deploy`: builds the Docker image and runs `npm publish` inside it, with `~/.npmrc` mounted read-only.
+3. `npm run deploy -- --otp=<2FA code>`: builds the Docker image and runs `npm publish --otp=...` inside it, with `~/.npmrc` mounted read-only. The npm account requires 2FA to publish; a `404` on publish means the token in `~/.npmrc` is invalid (`npm login` to renew it).
 
 Never write npm tokens or `.npmrc` contents into the image, the repo or a commit.

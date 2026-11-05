@@ -6,14 +6,14 @@
   "types": "index.d.ts",
   "scripts": {
     "test": "vitest run",
-    "deploy": "docker build -t myeasymongo . && docker run --rm -v ~/.npmrc:/root/.npmrc:ro myeasymongo",
+    "deploy": "docker build -t myeasymongo . && docker run --rm -v ~/.npmrc:/root/.npmrc:ro myeasymongo npm publish",
     "typecheck": "tsc --noEmit --strict --skipLibCheck --module commonjs --target es2020 --moduleResolution node __tests__/types/usage.ts"
   },
   "author": "Florian BUREL",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/fburel/easyMongo.git"
+    "url": "git+https://github.com/fburel/easyMongo.git"
   },
   "dependencies": {
     "mongodb": "^6.8.0",
