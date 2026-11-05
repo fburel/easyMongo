@@ -1,11 +1,13 @@
 {
   "name": "myeasymongo",
-  "version": "2.3.7",
+  "version": "2.4.0",
   "description": "myeasymongo helps you connect to your mongoDB instance and interact with your collections",
   "main": "index.js",
+  "types": "index.d.ts",
   "scripts": {
     "test": "vitest run",
-    "deploy" :"export NPMRC=$(cat ~/.npmrc | xargs) && docker build --build-arg var_name=${NPMRC} -t myeasymongo . && docker run myeasymongo"
+    "deploy": "docker build -t myeasymongo . && docker run --rm -v ~/.npmrc:/root/.npmrc:ro myeasymongo",
+    "typecheck": "tsc --noEmit --strict --skipLibCheck --module commonjs --target es2020 --moduleResolution node __tests__/types/usage.ts"
   },
   "author": "Florian BUREL",
   "license": "MIT",
@@ -18,7 +20,9 @@
     "uuid": "^10.0.0"
   },
   "devDependencies": {
+    "@types/node": "^20.19.43",
     "mongodb-memory-server": "^10.0.0",
+    "typescript": "^5.9.3",
     "vitest": "^2.0.5"
   }
 }

@@ -1,23 +1,19 @@
 # Use Node.js as the base image
 FROM node:20-slim
 
-ARG var_name
-
 # Set the working directory in the Docker image
 WORKDIR /app
 
-ENV NPMRC=$var_name
-
-RUN echo $NPMRC > .npmrc
-
 # Copy your package files
-COPY package.json ./
+COPY package.json readme.md ./
 
-# Install any dependencies
-RUN npm install --omit=dev
+# Agent skill, so that it can be copied from node_modules
+COPY claude-plugin/skills ./skills
 
 # Copy your source files
 COPY ./src/* ./
 
-# Command to publish your package
+# Publish the package.
+# The npm credentials are NOT baked into the image: ~/.npmrc is mounted
+# read-only at run time (see the "deploy" script in package.json).
 CMD ["npm", "publish"]

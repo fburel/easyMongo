@@ -1,0 +1,10 @@
+{
+  "name": "myeasymongo",
+  "version": "2.4.0",
+  "description": "Teaches AI coding agents to use the myeasymongo library correctly: models, Connect, CRUD, pagination, upserts, ObjectId pitfalls.",
+  "author": { "name": "Florian Burel" },
+  "homepage": "https://github.com/fburel/easyMongo",
+  "repository": "https://github.com/fburel/easyMongo",
+  "license": "MIT",
+  "keywords": ["mongodb", "myeasymongo", "nodejs"]
+}

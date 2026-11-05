@@ -1,420 +1,466 @@
-# MyEasyMongo
+# myeasymongo
 
-## Description
+A thin layer over the official [MongoDB Node.js driver](https://www.mongodb.com/docs/drivers/node/current/) that removes the boilerplate:
 
-`myeasymongo` helps you connect to your mongoDB instance and interact with your collections
+- **One shared connection**, opened on first use and reused everywhere (works well in serverless functions).
+- **Models**: declare a collection once, get CRUD, pagination, upsert and aggregation methods on it, and add your own.
+- **String ids**: documents come back with `_id` as a string, ready for JSON.
+- **Automatic timestamps**: `_created_at` and `_updated_at` are maintained for you.
+- **Declared indexes**, created on connect.
+- **TypeScript types** included.
 
-## installation 
+It is not an ORM: there is no schema, no validation, no magic. Queries, updates and pipelines use the plain MongoDB syntax.
 
-You can install this package with NPM
-`npm install myeasymongo --save`
+> Using an AI coding agent? Install the [myeasymongo skill](#ai-coding-agents) so it knows the API and its pitfalls.
 
-## Usage
+## Contents
 
-### Set the connection string to the DB
+- [Installation](#installation)
+- [Quick start](#quick-start)
+- [Configuration](#configuration)
+- [Models](#models)
+- [Connecting](#connecting)
+- [API reference](#api-reference)
+- [Conventions](#conventions)
+- [TypeScript](#typescript)
+- [Recipes](#recipes)
+- [AI coding agents](#ai-coding-agents)
+- [Upgrading to 2.4](#upgrading-to-24)
+- [Contributing](#contributing)
 
-this package looks for a connection string in the MONGO environment variable. 
-Before using, make sure to configure your working environment accordingly.
+## Installation
 
-``` shell
-MONGO=mongodb+srv://<user>:<pwd>@<cluster_ip>/<database>?retryWrites=true&w=majority
+```shell
+npm install myeasymongo
 ```
 
-### Register you collections using Models
+Requires Node.js 16.20.1 or later. `mongodb` (v6) is installed as a dependency.
 
-MyEasyMongo uses the principles of Models to encapsulate a mongoDB collection and the methods that can be use on it (CRUD, aggegation....);
-Once you have created a model for your collection, it will be available as a property in the myeasymongo driver.
-Registering a Model is easy,for example let's create a model for a `Post` collection:
+## Quick start
 
-```javascript
-
-const { Model, Register } = require('myeasymongo');
-const model = Model("Post"); // the table of the collection in MongoDB
-Register("posts", model); // Register the model with a unique identifier : i.e posts. Once registered, the model will be available under the `posts` property of the driver
+```shell
+MONGO="mongodb+srv://<user>:<password>@<cluster>/<database>?retryWrites=true&w=majority"
 ```
 
-> Note that the model is register with the `posts` label. We will use this label later on to access this collection.
+```javascript
+const { Model, Register, Connect } = require('myeasymongo');
 
-### Add capabilities to a model
+// 1. Declare a model for the "Posts" collection, available as `mongo.posts`
+Register('posts', Model('Posts'));
 
-A Model comes with the usual CRUD methods : `getbyIdAsync`, `findAllAsync`, `findOneAsync`, `getByPageAsync`, `saveAsync`, `saveAllAsync`, `deleteByIdAsync`, `deleteAllAsync`, `replaceAsync`, `updateByIdAsync`, `updateManyAsync`, `updateOneAsync`, `insertIfNotFoundAsync`, `upsertAsync`, `setAsync`,   `countAsync`, `aggregateAsync` ... 
+// 2. Use it
+await Connect(async (mongo) => {
+  const post = await mongo.posts.saveAsync({ title: 'Hello', author: 'Jane' });
+  // { _id: '665f1c...', title: 'Hello', author: 'Jane', _created_at: Date, _updated_at: Date }
 
-However you might want to add some methods of you own to a specific model.
-You can do so by adding method to the model object before registering it.
-In this example we had the bcrypt capability to our user model :
+  const janePosts = await mongo.posts.findAllAsync({ author: 'Jane' });
+});
+```
+
+## Configuration
+
+By default the connection string is read from the `MONGO` environment variable. You can also set it in code with `Configure`, before the first `Connect`:
 
 ```javascript
-const Table = "Users";
+const { Configure } = require('myeasymongo');
 
+Configure({
+  uri: 'mongodb://localhost:27017',   // default: process.env.MONGO
+  dbName: 'blog',                     // default: the database in the connection string
+  clientOptions: { maxPoolSize: 10 }, // passed to the MongoClient
+});
+```
+
+- Every option is optional. Each call to `Configure` **replaces** the previous configuration.
+- `clientOptions` are only applied when a connection is opened. Call `Configure` before the first `Connect`, or call `Disconnect()` first.
+
+## Models
+
+### Declaring a model
+
+`Model(collectionName, options?)` creates a model class. `Register(name, model)` makes it available as `mongo[name]` in every `Connect`.
+
+```javascript
+// models/posts.js
 const { Model, Register } = require('myeasymongo');
 
-const model = Model(Table);
+const posts = Model('Posts');
+Register('posts', posts);
 
+module.exports = posts;
+```
 
-/***************
- * EXTRAS
- ****************/
+Register your models once, at startup, before calling `Connect`.
 
+### Indexes
+
+Declare the indexes of a collection on its model. They are created on the first `Connect`, once per connection. The format is the one of MongoDB's [`createIndexes`](https://www.mongodb.com/docs/manual/reference/method/db.collection.createIndexes/).
+
+```javascript
+const users = Model('Users', {
+  indexes: [
+    { key: { email: 1 }, unique: true },
+    { key: { _created_at: -1 } },
+  ],
+});
+Register('users', users);
+```
+
+If an index cannot be created (for instance, a unique index on a field that already has duplicates), `Connect` calls your task with `(null, error)` and tries again on the next call.
+
+> `upsertAsync` and `insertIfNotFoundAsync` are only safe against duplicates when the criteria is backed by a unique index. Without one, two concurrent calls can both insert a document.
+
+### Custom methods
+
+Add your own methods to the model's `prototype`. Inside them, `this` is the model: you can call its methods (`this.findOneAsync`, `this.aggregateAsync`...) and the underlying driver (`this.driver`). Use `function`, not an arrow function.
+
+```javascript
 const bcrypt = require('bcryptjs');
+const { Model, Register } = require('myeasymongo');
 
-model.prototype.checkPassword = function (user, password) {
+const users = Model('Users', { indexes: [{ key: { email: 1 }, unique: true }] });
 
-  return new Promise(function (resolve, reject) {
-
-    bcrypt.compare(password, user.password, function (err, results) {
-      if(err){
-        reject(err);
-      } else if(results) {
-        resolve(user);
-      } else {
-        reject(new Error("401"));
-      }
-    });
-  });
-}
-
-// encrypt the password
-model.prototype.hash = function (password) {
-  return new Promise(function (resolve, reject) {
-    bcrypt.hash(password, 14, function (err, hash) {
-      if(err) reject(err);
-      else resolve(hash);
-    })
-  });
-}
-
-Register('user', model);
-```
-
-Now the `user` model has 2 extra methods: `checkPassword` and `hash`.
-
-### Connecting and Accessing the model
-
-In order to use your model and actually start coding database stuff, you need to use the Connect function to initiate a connection to the db.
-The connect function takes a callback in wich you can play with the received driver.
-the driver contains all your registered model.
-
-```javascript
-
-const { Connect } = require('myeasymongo');
-
-// import your model files
-require('./model/posts');
-require('./model/users')
-
-await Connect(async function (mongo) {
-
-    try{
-        await mongo.posts.saveAsync({
-          title : "Lorem Ipsum",
-          author : 'John Doe',
-          content : 'TBD'
-        });
-    } catch (e) {
-        console.log('error');
-        console.log(e);
-    }
-});
-```
-
-### Pro tip : importing all your model at once
-
-As your project grow, you might find that you have more and more collection, each with special need and custom method (i.e. aggregation helper).
-I find it cleaner to have a folder containing all my model declaration, a js file per model, and to load them all early on in the project using a package like auto load to do so. For instance, in the previous code, the lines :
-``` javascript
-require('./model/posts');
-require('./model/users')
-```
-could be replaced by :
-
-```javascript
-require('auto-load')('./routes/model');
-```
-
-A small win when only 2 model files exist, but a life saver as you add more of them and don't have to think about importing them.
-
-### Creating an Express middleware
-
-For those times when you create an api, you have to handle some routes, and some of them needs a running connection to your mongoDB instance. I admit I find it painfull to have to call the `Connect` method in every endpoint handler so I came up with a middleware that will, beforehand, to the Connect thingy and pass the mongo instance down the middleware line.
-
-Let's create a `makeModel.js` file
-
-> Note that this package uses a 'smart connection' mechanism as per recommanded by mongo, meaning that calling connect several times does not necessarly means establishing a new connection each time. If a previous connection exist and is still valid, it will be reused. Hence, calling this method on each route isn't time consuming.
-
-```javascript
-const { Connect } = require('myeasymongo');
-
-/// load the model classes
-require('auto-load')('./routes/model');
-
-module.exports = async function(req, res, next) {
-  try {
-    await Connect(async function(driver) {
-
-      // put the database driver in the req object
-      req.model = driver
-
-      await next();
-    });
-  } catch (e) {
-    next(e);
-  }
+users.prototype.createAsync = async function (email, password) {
+  const passwordHash = await bcrypt.hash(password, 12);
+  return this.saveAsync({ email, passwordHash });
 };
+
+users.prototype.checkPasswordAsync = async function (email, password) {
+  const user = await this.findOneAsync({ email });
+  return user !== null && bcrypt.compare(password, user.passwordHash);
+};
+
+Register('users', users);
 ```
 
-Then add the middleware to the routes handler that need access to the db. By doing so, your code can access the req.model object and perform db related tasks directly.
-
 ```javascript
-const makeModel = require("./middleware/makeModel");
-
-router.get('/posts', makeModel, function(req, res, next){
-    const posts = await req.model.post.findAllAsync({});
-    res.json(posts);
+await Connect(async (mongo) => {
+  await mongo.users.createAsync('jane@example.com', 's3cret');
+  const ok = await mongo.users.checkPasswordAsync('jane@example.com', 's3cret'); // true
 });
 ```
 
-### Testing with JEST
-
-I can be usefull when testing your own code to access the uderneath database to check if the data retrieved or save is what it should be.
-When using the jest testing tool, you can create your custom `testWithMongo` method that will connect to the DB and deliver the mongo driver with the loaded model before running your actual test:
-
-``` javascript
-
-const { Connect } = require('myeasymongo');
-require('auto-load')('./src/model');
-
-const testWithMongo = function(txt, handler){
-    // overrides the jest test method
-    test(txt, async () => {
-        // Make sure your process.env.MONGO is set to target the correct database.
-        // if you need to, you can override the connection string for the tests by providing a setup.js file to the jest command line or override it directly here
-        // process.env.MONGO = <connection string to the test database>
-        await Connect(mongo => {
-            return handler(mongo);
-        })
-    })
-}
-
-testWithMongo("Models should be imported in the mongo object", async (mongo) => {
-    expect(mongo.posts).toBeDefined();
-    expect(mongo.users).toBeDefined();
-})
-
-
-```
-
-
-## API
-
-### creating an object id form a string
-
-_id fields are, as often as possible, treated as string. That means that in methods such as `doSomethingByIdAsync` or `setAsync`, the `_id` value is expected to be a `string`, the conversion of that `string` to a `MongoDB.ObjectId` happens behind the curtain. Hoewever, sometimes, while writing aggregation pipelines mainly, you might need to write a proper `ObjectId` value. `myeasymongo` comes with the tool for the job:
+Aggregation helpers are a good fit for custom methods:
 
 ```javascript
 const { ObjectId } = require('myeasymongo');
-const id = ObjectId("618a05bea5e689590685043c");
+
+// "Customers who bought this also bought": the 4 products most often ordered with `productId`
+orders.prototype.alsoBoughtAsync = function (productId) {
+  return this.aggregateAsync([
+    { $match: { status: { $ne: 'CANCELLED' }, 'products.id': ObjectId.from(productId), 'products.1': { $exists: true } } },
+    { $unwind: '$products' },
+    { $match: { 'products.id': { $ne: ObjectId.from(productId) } } },
+    { $group: { _id: '$products.id', count: { $sum: 1 } } },
+    { $sort: { count: -1 } },
+    { $limit: 4 },
+  ]);
+};
 ```
 
-### CRUD
-
-When fetching object, the `_id` field is automaticly rewrote to a `string` so it's easier to manipulate :
+## Connecting
 
 ```javascript
-// find by id (id is given as a string)
-const post = await mongo.post.getByIdAsync("618a05bea5e689590685043c");
+const result = await Connect(async (mongo, error) => {
+  // mongo.<name> for each registered model
+  // mongo.isConnected() -> Promise<boolean>, pings the server
+  // mongo.driver        -> the low level driver (mongo.driver.db is the MongoDB Db)
+  return something;
+}, keepAlive = true);
 ```
 
-```javascript
-// find all post 
-const post = await mongo.post.findAllAsync();
-```
+- `Connect` resolves to the value returned by your task.
+- The connection is opened on the first call and **reused** by the next ones, so calling `Connect` on every request is cheap. Concurrent calls share the same connection.
+- **Connection errors** (no URI, server unreachable, index creation failed) are not thrown: your task is called with `mongo === null` and the error as second argument.
+- **Errors thrown by your task** are propagated: `Connect` rejects with them.
+- With `keepAlive = false` the connection is closed when the task ends. The connection is shared, so don't do this while other tasks may be running.
 
 ```javascript
-// find all post matching criteria
-const post = await mongo.post.findAllAsync({
-  _created_at : { $gt : ISODate('2022-01-01')}
+await Connect(async (mongo, error) => {
+  if (error) {
+    // log, retry, return a 503...
+    return;
+  }
+  await mongo.posts.saveAsync({ title: 'Hello' });
 });
 ```
 
+### Closing the connection
+
+Call `Disconnect()` when your process stops, or at the end of your tests:
+
 ```javascript
-// Sometimes you just want to know how many documents match a query
-const count = await mongo.post.countAsync({
-  _created_at : { $gt : ISODate('2022-01-01')}
+const { Disconnect } = require('myeasymongo');
+
+process.on('SIGTERM', async () => {
+  await Disconnect();
+  process.exit(0);
 });
 ```
 
+## API reference
+
+All methods return Promises. "Doc" means a document with `_id` as a string (see [Conventions](#conventions)). `id` parameters accept a string or an `ObjectId`; an invalid id throws a `TypeError`.
+
+### Read
+
+| Method | Resolves to |
+|---|---|
+| `getByIdAsync(id, projection?)` | Doc, or `null` |
+| `findOneAsync(filter?, projection?, sort?)` | Doc, or `null` |
+| `findAllAsync(filter?, projection?, sort?, skip?, limit?)` | Doc[] (loads everything in memory: use `limit` or `fetchPageAsync` on large collections) |
+| `fetchPageAsync(filter?, sort?, projection?, page?, pageSize?, options?)` | `{ size, items }`, plus `total` and `pageCount` with `{ withTotal: true }` |
+| `countAsync(filter?)` | number |
+| `aggregateAsync(pipeline)` | the raw pipeline results (`_id` **not** converted) |
+
 ```javascript
-// For large collection, a pagination system has been set up
-const post = await mongo.post.getByPageAsync(
-  1, // the page you want
-  20, // the number of item per page, default = 50
-  {
-    _created_at : { $gt : ISODate('2022-01-01')}
-  }, // a match criteria, default {}
-  { _updated_at: 1 } // sortOrder, default = { _updated_at: -1 }
+// Page 2 of Jane's posts, 20 per page, newest first, without the content field
+const page = await mongo.posts.fetchPageAsync(
+  { author: 'Jane' },  // filter, default {}
+  { _created_at: -1 }, // sort, default { _id: 1 }
+  { content: 0 },      // projection, default none
+  2,                   // page number, starts at 1, default 1
+  20,                  // page size, default 50
+  { withTotal: true }  // also count all matching documents
 );
+// { size: 20, items: [...], total: 57, pageCount: 3 }
 ```
 
+### Write
+
+| Method | Resolves to |
+|---|---|
+| `saveAsync(doc)` | the saved Doc, with `_id`, `_created_at`, `_updated_at` |
+| `saveAllAsync(docs)` | the inserted ids as `{ 0: ObjectId, 1: ObjectId, ... }` |
+| `replaceAsync(doc)` | replaces the whole document `doc._id`; the new Doc, or `null` if not found |
+| `setAsync(id, fields)` | `$set` the given fields on one document; MongoDB `UpdateResult` |
+| `updateByIdAsync(id, update)` | MongoDB `UpdateResult` |
+| `updateOneAsync(filter, update)` | MongoDB `UpdateResult` |
+| `updateManyAsync(filter, update)` | MongoDB `UpdateResult` |
+| `upsertAsync(filter, update)` | updates the first match, or creates a document; the document **after** the update (`_id` is an `ObjectId`) |
+| `insertIfNotFoundAsync(filter, doc)` | inserts `doc` only if nothing matches; the existing or inserted document (`_id` is an `ObjectId`) |
+| `deleteByIdAsync(id)` | MongoDB `DeleteResult` |
+| `deleteAllAsync(filter?)` | MongoDB `DeleteResult` (**no filter deletes the whole collection**) |
+
+`update` is a regular MongoDB update document (`$set`, `$unset`, `$inc`, `$push`...):
+
 ```javascript
-// find one post only
-const post = await mongo.post.findAllAsync({
-  _created_at : { $gt : ISODate('2022-01-01')}
+await mongo.users.setAsync(id, { name: 'Jane' });
+
+await mongo.users.updateByIdAsync(id, {
+  $set: { name: 'Jane' },
+  $unset: { nickname: '' },
+  $addToSet: { badges: 'early-adopter' },
 });
+
+// Create the user if it doesn't exist, update it otherwise
+const user = await mongo.users.upsertAsync(
+  { email: 'jane@example.com' },
+  { $set: { lastLogin: new Date() }, $inc: { logins: 1 } }
+);
+
+// Create the user only if it doesn't exist, never modify an existing one
+await mongo.users.insertIfNotFoundAsync(
+  { email: 'jane@example.com' },
+  { email: 'jane@example.com', name: 'Jane' }
+);
+
+// Read, modify, write back the whole document
+const post = await mongo.posts.getByIdAsync(id);
+post.title = 'New title';
+await mongo.posts.replaceAsync(post);
 ```
 
-```javascript
-// save
-// Note that saving an object will had _created_at and _updated_at fields
-const post = await mongo.post.saveAsync({
-  author : 'Mark',
-  title : 'Welcome to the MetaVerse',
-  content: 'You\'ve been fooled!'
-});
+### Other exports
 
-console.log(post)
-/*
-{
-  _id : '......'
-  author : 'Mark',
-  title : 'Welcome to the MetaVerse',
-  content: 'You\'ve been fooled!'
-  _updated_at : 2022-01-01T00:00:00.000 
-  _created_at : 2022-01-01T00:00:00.000 
+| Export | Description |
+|---|---|
+| `ObjectId.from(value)` | converts a string to a MongoDB `ObjectId`; throws a `TypeError` if invalid |
+| `ObjectId.test(value)` | `true` if `value` can be converted |
+| `Configure(options)` | see [Configuration](#configuration) |
+| `Disconnect()` | closes every open connection |
+
+### Deprecated
+
+| Method | Use instead |
+|---|---|
+| `getByPageAsync(page, pageSize, filter, projection, sort)` | `fetchPageAsync(..., { withTotal: true })`, which sorts and paginates before the projection and is much faster on large collections |
+| `driver.toObjectId(id)` | `ObjectId.from(id)` |
+
+## Conventions
+
+**`_id` is a string** in the documents returned by `getByIdAsync`, `findOneAsync`, `findAllAsync`, `fetchPageAsync`, `saveAsync` and `replaceAsync`. Only the top-level `_id` is converted: other `ObjectId` fields, and the results of `aggregateAsync`, `upsertAsync`, `insertIfNotFoundAsync` and `saveAllAsync`, are not.
+
+**In filters and pipelines, `_id` must be an `ObjectId`**. MongoDB doesn't match a string against an `ObjectId`:
+
+```javascript
+const { ObjectId } = require('myeasymongo');
+
+await mongo.posts.findAllAsync({ _id: { $in: ids.map(ObjectId.from) } });
+await mongo.comments.findAllAsync({ postId: ObjectId.from(post._id) });
+```
+
+Methods that take an `id` parameter (`getByIdAsync`, `setAsync`...) do the conversion for you.
+
+**Timestamps**:
+
+| Method | `_created_at` | `_updated_at` |
+|---|---|---|
+| `saveAsync` | set | set |
+| `saveAllAsync` | set | – |
+| `replaceAsync` | kept only if present in the replacement | set |
+| `set` / `update*` | – | set |
+| `upsertAsync`, `insertIfNotFoundAsync` | set on insert | set |
+
+**Arguments are modified**: `saveAsync` and `saveAllAsync` add `_id` and the timestamps to the objects you pass, and `update*` / `upsertAsync` add a `$set._updated_at` to the update object.
+
+## TypeScript
+
+Types are included. Pass your document type to `Model`, then declare your models in the `Models` interface to type `mongo` in `Connect`:
+
+```typescript
+import { Connect, Model, Register, ModelInstance } from 'myeasymongo';
+
+interface Post {
+  title: string;
+  author: string;
+  rating?: number;
 }
-*/
-```
 
-```javascript
-// save
-// will return a list of isds as strings
-const post = await mongo.post.saveAll({
-  author : 'Mark',
-  title : 'Welcome to the MetaVerse',
-  content: 'You\'ve been fooled!'
-}, {
-  author : 'Flo',
-  title : 'All Apologies',
-  content: 'to meta fans, it was not cool'
+export const posts = Model<Post>('Posts');
+Register('posts', posts);
+
+declare module 'myeasymongo' {
+  interface Models {
+    posts: ModelInstance<Post>;
+    // with custom methods:
+    // users: ModelInstance<User> & { checkPasswordAsync(email: string, password: string): Promise<boolean> };
+  }
+}
+
+await Connect(async (mongo) => {
+  const post = await mongo.posts.findOneAsync({ author: 'Jane' }); // Doc<Post> | null
+  post?._id;                                                        // string
 });
+```
 
-console.log(post)
-/*
-["...", "..."]
-*/
+- Models registered but not declared in `Models` are still accessible, typed as `any`.
+- `mongo` is typed as non-null for convenience; it is `null` when the second argument (`error`) is set.
+- `clientOptions` is typed with `MongoClientOptions`, which requires `@types/node` in your project.
+
+## Recipes
+
+### Express middleware
+
+```javascript
+// middlewares/mongo.js
+const { Connect } = require('myeasymongo');
+require('../models'); // register the models
+
+module.exports = async function mongo(req, res, next) {
+  const error = await Connect((mongo, err) => {
+    if (!err) req.mongo = mongo;
+    return err;
+  });
+  next(error);
+};
 ```
 
 ```javascript
-// update a whole object
-const post = await mongo.post.getByIdAsync("618a05bea5e689590685043c");
-post.content = '....';
-await mongo.post.updateAsync(post);
-```
+const mongo = require('./middlewares/mongo');
 
-```javascript
-// an helper method to set a value (the update is done in one shot instead of first fetchin, then writing)
-const post = await mongo.post.setAsync("618a05bea5e689590685043c", {
-  content: '....'
-})
-```
-
-```javascript
-// delete follow the same principles
-
-await mongo.post.deleteAsync("618a05bea5e689590685043c");
-
-await mongo.post.deleteAllAsync({author : 'Mark'});
-
-```
-
-Upsert can be used to update a document and, if no document match the query, then create one.
-There is 2 ways to use upsert with myeasymongo :
-
-
-```javascript
-// insert a whole new doc, if none match the query. Existing doc if any won't be updated.
-
-await mongo.post.insertIfNotFoundAsync({
-  email : 'johndoe@myeasymongo.com'
-} , {
-  email : 'johndoe@myeasymongo.com',
-  firstName : 'John'
-  lastName : 'Doe',
-  job : 'Tech Evangelist'
-});
-
-```
-
-```javascript
-// when using upsert async you can pass a full mongo updater object. If a document match the query, it will be updated accordingly, if not a new empty document will be created and the updater will be apply to it.
-
-await mongo.post.upsertAsync({
-  email : 'johndoe@myeasymongo.com'
-} , {
-  $set : {
-    email : 'johndoe@myeasymongo.com',
-    firstName : 'John'
-    lastName : 'Doe',
-    job : 'Tech Evangelist'
-  },
-  $unset : {
-    profilePicture: ''
-  },
-  $addToSet {
-    achievements : "Employee of the year"
+router.get('/posts', mongo, async (req, res, next) => {
+  try {
+    res.json(await req.mongo.posts.findAllAsync({}, {}, { _created_at: -1 }, 0, 50));
+  } catch (e) {
+    next(e);
   }
 });
-
 ```
 
-### Aggregation
+The connection stays open after the middleware returns, so `req.mongo` can be used in the route handlers.
 
-Performing aggregation query comes in handy very quickly has your project grows...
-MyEasyMongo let you call your own aggregation pipeline, with the mongo syntax, directly to the model.
+### Loading all your models
 
-Usualy, I put my aggregation directly in my model file, has this:
+With one file per model in a `models/` folder, add an index that requires them all:
 
 ```javascript
-
-// return 4 product ref that can interreste a customer buying the given ref base on gloabal customer purchase (you might also like ...)
-model.prototype.getBestMatchAsync = function (sku) {
-  const pipeline = [
-    {
-      '$match': {
-        'status': {$ne : 'CANCELLED'}, // exclude cancel orders
-        'products.sku': sku, // order containing this product
-        'products.1': { $exists: true }, // more than 1 sku in order
-      },
-    },
-    // group by skus
-    {
-      '$unwind': {
-        'path': '$products'
-      }
-    }, {
-      '$group': {
-        '_id': '$products.sku',
-        'count': {
-          '$sum': 1
-        }
-      }
-    },
-
-
-    // sort by count, exclude the looked up sku, limit to 4 results
-    {
-      '$sort': {
-        'count': -1
-      }
-    }, {
-      '$match': {
-        '_id': {
-          '$ne': ean
-        }
-      }
-    }, {
-      '$limit': 4
-    },   
-  ];
-  return this.driver.aggregateAsync(Table, pipeline);
-}
+// models/index.js
+require('./posts');
+require('./users');
 ```
+
+Then `require('./models')` once at startup.
+
+### Testing with an in-memory database
+
+With [mongodb-memory-server](https://github.com/typegoose/mongodb-memory-server) and Jest or Vitest:
+
+```javascript
+const { MongoMemoryServer } = require('mongodb-memory-server');
+const { Configure, Connect, Disconnect } = require('myeasymongo');
+require('../models');
+
+let mongod;
+
+beforeAll(async () => {
+  mongod = await MongoMemoryServer.create();
+  Configure({ uri: mongod.getUri() });
+});
+
+afterAll(async () => {
+  await Disconnect();
+  await mongod.stop();
+});
+
+test('saves a post', () => Connect(async (mongo, error) => {
+  expect(error).toBeUndefined();
+  const post = await mongo.posts.saveAsync({ title: 'Hello' });
+  expect(await mongo.posts.getByIdAsync(post._id)).toMatchObject({ title: 'Hello' });
+}));
+```
+
+## AI coding agents
+
+This repository ships an [Agent Skill](https://agentskills.io) that teaches AI coding agents how to use myeasymongo: project wiring, the rules that avoid the common bugs (string vs `ObjectId` ids, connection errors, unbounded reads, unsafe upserts...), and the full API. Agents load it automatically when they work on code that uses the library.
+
+**Claude Code**, as a plugin:
+
+```shell
+claude plugin marketplace add fburel/easyMongo
+claude plugin install myeasymongo@myeasymongo
+```
+
+(or `/plugin marketplace add fburel/easyMongo` then `/plugin install myeasymongo@myeasymongo` inside a session). It can also be invoked explicitly with `/myeasymongo:myeasymongo`.
+
+**From the npm package**: the skill is included in `node_modules/myeasymongo/skills/myeasymongo`. Copy it to the skills folder of your agent, for instance for Claude Code:
+
+```shell
+mkdir -p .claude/skills
+cp -r node_modules/myeasymongo/skills/myeasymongo .claude/skills/
+```
+
+Commit `.claude/skills/myeasymongo` to share it with your team. Other agents that support Agent Skills use their own skills folder: check their documentation.
+
+## Upgrading to 2.4
+
+- `mongo.isConnected()` now pings the server and returns a **Promise**: use `await mongo.isConnected()`. It used to throw with the v6 driver.
+- `fetchPageAsync` returns `{ size, items }` (it used to return `{ _id: null, size, items }`, or `undefined` for an empty page), and defaults to sorting by `_id`.
+- `replaceAsync` returns the new document. It used to always return `undefined`, and no longer modifies the object you pass.
+- Errors thrown inside a `Connect` task are now propagated. The task used to be called a second time with `(null, error)`.
+
+New: `Configure`, `Disconnect`, model indexes, `fetchPageAsync(..., { withTotal: true })`, TypeScript types.
+
+## Contributing
+
+```shell
+npm install
+npm test            # unit tests, with an in-memory MongoDB
+npm run typecheck   # checks the TypeScript definitions
+```
+
+See [AGENTS.md](AGENTS.md) for the project layout and conventions (written for AI coding agents, useful for humans too).
+
+## License
+
+MIT © Florian Burel

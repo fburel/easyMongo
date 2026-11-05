@@ -82,6 +82,51 @@ describe("test connection and model availability", () => {
         })
     })
 
+    it("isConnected should ping the server", async () => {
+        await Connect(async model => {
+            await expect(model.isConnected()).resolves.toBe(true);
+        })
+    })
+
+    it("errors thrown by the task should propagate and the task should run only once", async () => {
+        const task = vi.fn(() => { throw new Error("boom"); });
+
+        await expect(Connect(task)).rejects.toThrow("boom");
+        expect(task).toHaveBeenCalledTimes(1);
+    })
+
+    it("missing MONGO env should call the task with an error", async () => {
+        const saved = process.env.MONGO;
+        delete process.env.MONGO;
+        try {
+            const task = vi.fn((model, err) => err);
+            const err = await Connect(task);
+            expect(task).toHaveBeenCalledTimes(1);
+            expect(task.mock.calls[0][0]).toBeNull();
+            expect(err).toBeInstanceOf(Error);
+            expect(err.message).toMatch(/MONGO/);
+        } finally {
+            process.env.MONGO = saved;
+        }
+    })
+
+    it("concurrent connections should share the same client", async () => {
+        const [a, b] = await Promise.all([
+            Connect(m => m.driver.db.client),
+            Connect(m => m.driver.db.client),
+        ]);
+        expect(a).toBe(b);
+    })
+
+    it("should reconnect after a connection closed with keepAlive = false", async () => {
+        const first = await Connect(m => m.driver.db.client, false);
+        const second = await Connect(async m => {
+            expect(await m.isConnected()).toBe(true);
+            return m.driver.db.client;
+        });
+        expect(second).not.toBe(first);
+    })
+
     it("custom method should be make available", async () => {
 
         const Table = randomString(5);

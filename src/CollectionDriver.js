@@ -4,8 +4,14 @@ let CollectionDriver = function (db) {
   this.db = db;
 };
 
+/**
+ * Ping the server. Resolves to true if it answers, false otherwise.
+ * Note: returns a Promise<boolean>, so it must be awaited.
+ */
 CollectionDriver.prototype.isConnected = function () {
-  return this.db.serverConfig.isConnected()
+  return this.db.command({ ping: 1 })
+    .then(res => res.ok === 1)
+    .catch(() => false);
 };
 
 CollectionDriver.prototype.getCollectionAsync = function (collectionName) {
@@ -95,16 +101,19 @@ CollectionDriver.prototype.replaceAsync = function (
   objectId
 ) {
 
-  const id = ObjectID.from(objectId);
-
-  obj._id = id;
-  obj._updated_at = new Date();
-
   return this.getCollectionAsync(collectionName)
     .then((collection) => {
-      return collection.findOneAndReplace({ _id: id }, obj);
+      const id = ObjectID.from(objectId);
+      const replacement = { ...obj, _id: id, _updated_at: new Date() };
+      // driver v6 returns the document itself (or null), not { value }
+      return collection.findOneAndReplace({ _id: id }, replacement, {
+        returnDocument: "after",
+      });
     })
-    .then((result) => Promise.resolve(result.value));
+    .then((result) => {
+      if (result !== null && result._id !== undefined) result._id = result._id.toString();
+      return result;
+    });
 };
 
 CollectionDriver.prototype.updateByIdAsync = function (

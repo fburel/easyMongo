@@ -1,8 +1,13 @@
 const ObjectId = require("./ObjectId");
 
-module.exports = function (Table) {
+/**
+ * @param {string} Table name of the MongoDB collection
+ * @param {{ indexes?: object[] }} options
+ *  - indexes: index descriptions ({ key, unique, name, ... }) created on first Connect
+ */
+module.exports = function (Table, options = {}) {
 
-  return function (driver) {
+  const ModelClass = function (driver) {
     this.driver = driver;
 
     // get
@@ -73,6 +78,7 @@ module.exports = function (Table) {
 
     /**
      * return the list of record matching a certain criteria in a page per page fashion.
+     * With options.withTotal, also return the total number of matching records and the page count.
      */
     this.fetchPageAsync = function (
         match = {},
@@ -80,43 +86,51 @@ module.exports = function (Table) {
         project = null,
         pageNumber = 1,
         pageSize = 50,
+        options = {},
     ) {
-      let pipe = [];
+      // $sort cannot be empty; default to _id so that pages are deterministic
+      const hasSort = sort && Object.keys(sort).length > 0;
 
-      if(match) pipe.push({
-        $match: match,
-      });
+      const pagePipe = [
+        { $sort: hasSort ? sort : { _id: 1 } },
+        { $skip: Math.max(0, (pageNumber - 1) * pageSize) },
+        { $limit: pageSize },
+      ];
+      if(project) pagePipe.push({ $project: project });
 
-      if(sort) pipe.push({
-        $sort: sort,
-      });
+      const pipe = [];
+      if(match) pipe.push({ $match: match });
+
+      const stringifyIds = (items) => {
+        items.forEach(x => {
+          if(x._id !== undefined && x._id !== null) x._id = x._id.toString();
+        });
+        return items;
+      };
+
+      if(!options.withTotal) {
+        return this.driver.aggregateAsync(Table, pipe.concat(pagePipe)).then((items) => {
+          return { size: items.length, items: stringifyIds(items) };
+        });
+      }
 
       pipe.push({
-        $skip : (pageNumber - 1) * pageSize
-      })
-
-      pipe.push({
-        $limit : pageSize
-      })
-
-      if(project) pipe.push({
-        $project: project,
-      });
-
-      // group element
-      pipe.push( {
-        $group: {
-          _id: null,
-          size: {
-            $sum: 1,
-          },
-          items: {
-            $push: "$$ROOT",
-          }
+        $facet: {
+          items: pagePipe,
+          total: [{ $count: "count" }],
         },
-      })
+      });
 
-      return this.driver.aggregateAsync(Table, pipe).then((array) => array[0]);
+      return this.driver.aggregateAsync(Table, pipe).then(([res]) => {
+        const items = stringifyIds(res.items);
+        const total = res.total.length > 0 ? res.total[0].count : 0;
+        return {
+          size: items.length,
+          items,
+          total,
+          pageCount: Math.ceil(total / pageSize),
+        };
+      });
     };
 
 
@@ -194,4 +208,9 @@ module.exports = function (Table) {
 
 
   };
+
+  ModelClass.collectionName = Table;
+  ModelClass.indexes = options.indexes || [];
+
+  return ModelClass;
 };

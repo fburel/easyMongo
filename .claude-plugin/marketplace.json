@@ -1,0 +1,12 @@
+{
+  "name": "myeasymongo",
+  "description": "Agent skills for the myeasymongo library",
+  "owner": { "name": "Florian Burel" },
+  "plugins": [
+    {
+      "name": "myeasymongo",
+      "source": "./claude-plugin",
+      "description": "Teaches AI coding agents to use the myeasymongo library correctly."
+    }
+  ]
+}

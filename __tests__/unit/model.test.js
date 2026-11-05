@@ -262,6 +262,46 @@ describeWithMongo("", mongo => {
 
     })
 
+    it("replaceAsync should return the replaced document without mutating the input", async () => {
+        const post = await mongo.posts.saveAsync({ title : "before" });
+        const input = { ...post, title : "after" };
+
+        const result = await mongo.posts.replaceAsync(input);
+
+        expect(result).toBeDefined();
+        expect(result).not.toBeNull();
+        expect(result.title).toBe("after");
+        expect(result._id).toBe(post._id);
+        expect(typeof input._id).toBe("string");
+    })
+
+    it("fetchPageAsync should work with default parameters", async () => {
+        await mongo.posts.deleteAllAsync();
+        await mongo.posts.saveAllAsync([{ n : 1 }, { n : 2 }, { n : 3 }]);
+
+        const page = await mongo.posts.fetchPageAsync();
+
+        expect(page.size).toBe(3);
+        expect(page.items.map(x => x.n)).toEqual([1, 2, 3]);
+        expect(typeof page.items[0]._id).toBe("string");
+    })
+
+    it("fetchPageAsync should paginate, sort and project", async () => {
+        await mongo.posts.deleteAllAsync();
+        await mongo.posts.saveAllAsync([1, 2, 3, 4, 5].map(n => ({ n, secret : "x" })));
+
+        const page2 = await mongo.posts.fetchPageAsync({}, { n : -1 }, { secret : 0 }, 2, 2);
+
+        expect(page2.size).toBe(2);
+        expect(page2.items.map(x => x.n)).toEqual([3, 2]);
+        expect(page2.items[0].secret).toBeUndefined();
+    })
+
+    it("fetchPageAsync should return an empty page when nothing matches", async () => {
+        const page = await mongo.posts.fetchPageAsync({ n : { $gt : 1000 } });
+        expect(page).toEqual({ size : 0, items : [] });
+    })
+
     it("upsert with an existing document", async () => {
         // db is empty
         await mongo.posts.deleteAllAsync();
